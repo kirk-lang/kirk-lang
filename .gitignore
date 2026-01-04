@@ -1,0 +1,42 @@
+# Build artifacts
+build/
+bin/
+out/
+*.o
+*.obj
+*.exe
+*.a
+*.so
+*.dll
+*.dylib
+
+# LLVM / compiler outputs
+*.ll
+*.bc
+*.s
+
+
+# Temporary files
+*.tmp
+*.log
+
+*.cache
+
+# Editor / IDE
+.vscode/
+.idea/
+
+*.swp
+*.swo
+*.DS_Store
+
+# OS
+Thumbs.db
+
+# Test inputs / local experiments
+*.kirk.out
+
+
+# Debug
+*.dSYM/
+
