@@ -3,6 +3,7 @@
 #include "llvm/IR/IRBuilder.h"
 
 #include "Lexer.h"
+#include "Parser.h"
 #include <iostream>
 
 using namespace llvm;
@@ -18,19 +19,13 @@ int main(int argc, char **argv) {
         std::cerr << "Error: Could not open file " << argv[1] << "\n";
         return 1;
     }
+    
+    auto AST = Parse();
 
-    std::cout << "Reading file: " << argv[1] << "\n";
-
-    while (true) {
-        int tok = gettok();
-
-        if (tok == tok_eof) break;
-
-        if (tok == tok_number) {
-            std::cout << "Token: Number (" << NumVal << ")\n";
-        } else {
-            std::cout << "Token: Operator '" << (char)tok << "'\n";
-        }
+    if (AST) {
+        std::cout << "Parsed successfully! The AST is built.\n";
+    } else {
+        std::cerr << "Error parsing file.\n";
     }
 
     return 0;

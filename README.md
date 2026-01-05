@@ -11,7 +11,7 @@ Kirk is an experimental programming language and compiler written in C++. The go
 Requires LLVM and a C++ compiler.
 
 ```bash
-clang++ main.cpp `llvm-config --cxxflags --ldflags --system-libs --libs core` -o kirk
+clang++ main.cpp Lexer.cpp Parser.cpp `llvm-config --cxxflags --ldflags --system-libs --libs core` -o kirk
 ```
 
 ## Run
