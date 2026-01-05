@@ -40,3 +40,6 @@ Thumbs.db
 # Debug
 *.dSYM/
 
+# File Binary
+kirk
+
