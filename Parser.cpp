@@ -66,8 +66,8 @@ static std::unique_ptr<ExprAST> ParseBinOpRHS(int ExprPrec,
 
     // LOOKAHEAD: Is the *next* operator even stronger?
     // Example: "a + b * c"
-    // We are at "+". We parsed "b". Next op is "*".
-    // Since "*" is stronger than "+", we let "*" steal "b" as its LHS.
+    // We are at "+". We parsed "b". Next op is "*". Since "*" is stronger than
+    // "+", we let "*" steal "b" as its LHS.
     int NextPrec = GetTokPrecedence();
     if (TokPrec < NextPrec) {
       // Recursively parse the high-priority part first
