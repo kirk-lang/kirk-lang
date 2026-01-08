@@ -1,6 +1,7 @@
 #include "Codegen.h"
 #include "Lexer.h"
 #include "Parser.h"
+#include "llvm/IR/Verifier.h"
 #include "llvm/Support/raw_ostream.h"
 #include <iostream>
 
@@ -22,7 +23,11 @@ int main(int argc, char **argv) {
   auto AST = Parse();
 
   if (AST) {
-    std::cerr << "AST parsed successfully\n";
+    FunctionType *PrintfType =
+        FunctionType::get(Type::getInt32Ty(*TheContext),
+                          {PointerType::getUnqual(*TheContext)}, true);
+    Function *PrintfFunc = Function::Create(
+        PrintfType, Function::ExternalLinkage, "printf", TheModule.get());
 
     FunctionType *FT = FunctionType::get(Type::getInt32Ty(*TheContext), false);
     Function *TheFunction = Function::Create(FT, Function::ExternalLinkage,
@@ -36,9 +41,10 @@ int main(int argc, char **argv) {
     Value *Result = AST->codegen();
 
     if (Result) {
-      Value *IntResult =
-          Builder->CreateFPToSI(Result, Type::getInt32Ty(*TheContext));
-      Builder->CreateRet(IntResult);
+      Value *FormatStr = Builder->CreateGlobalString("%.2f\n");
+      Builder->CreateCall(PrintfFunc, {FormatStr, Result});
+      Builder->CreateRet(ConstantInt::get(*TheContext, APInt(32, 0)));
+      verifyFunction(*TheFunction);
 
       std::error_code EC;
       raw_fd_ostream OutFile("output.ll", EC);
