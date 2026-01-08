@@ -6,18 +6,14 @@ Kirk is an experimental programming language and compiler written in C++. The go
 - Current focus is the frontend: lexer, parser, and diagnostics.
 - LLVM is used for code generation.
 
-## Build
+## Build and Run
 
 Requires LLVM and a C++ compiler.
 
 ```bash
-clang++ main.cpp Lexer.cpp Parser.cpp AST.cpp `llvm-config --cxxflags --ldflags --system-libs --libs core` -o kirk
-```
-
-## Run
-
-```bash
-./kirk file.kirk
+clang++ main.cpp Lexer.cpp Parser.cpp Codegen.cpp `llvm-config --cxxflags --ldflags --system-libs --libs core` -o kirk
+chmod +x compile_and_run.sh
+./compile_and_run <file_name>.kirk
 ```
 
 ## Status
