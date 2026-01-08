@@ -1,7 +1,6 @@
 #include "Codegen.h"
 #include "Lexer.h"
 #include "Parser.h"
-#include "llvm/Support/FileSystem.h"
 #include "llvm/Support/raw_ostream.h"
 #include <iostream>
 
@@ -23,22 +22,32 @@ int main(int argc, char **argv) {
   auto AST = Parse();
 
   if (AST) {
-    // To create a dummy function signature: "void main()" (a boiler-plate LLVM
-    // to insert code)
-    FunctionType *FT = FunctionType::get(Type::getVoidTy(*TheContext), false);
+    std::cerr << "AST parsed successfully\n";
+
+    FunctionType *FT = FunctionType::get(Type::getInt32Ty(*TheContext), false);
     Function *TheFunction = Function::Create(FT, Function::ExternalLinkage,
                                              "main", TheModule.get());
 
-    // Create a "Basic Block" (a chunk of code)
+    // Creating code
     BasicBlock *BB = BasicBlock::Create(*TheContext, "entry", TheFunction);
     Builder->SetInsertPoint(BB);
 
-    // Generate the IR and return void for the function
-    AST->codegen();
-    Builder->CreateRetVoid();
+    // IR generation
+    Value *Result = AST->codegen();
 
-    std::cout << "IR Generated" << std::endl;
-    TheModule->print(outs(), nullptr);
+    if (Result) {
+      Value *IntResult =
+          Builder->CreateFPToSI(Result, Type::getInt32Ty(*TheContext));
+      Builder->CreateRet(IntResult);
+
+      std::error_code EC;
+      raw_fd_ostream OutFile("output.ll", EC);
+      if (!EC) {
+        TheModule->print(OutFile, nullptr);
+      }
+    } else {
+      std::cerr << "Error: codegen() returned nullptr\n";
+    }
   } else {
     std::cerr << "Error parsing file.\n";
   }
