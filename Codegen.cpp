@@ -1,6 +1,6 @@
 #include "Codegen.h"
 #include "AST.h"
-#include "llvm/IR/Verifier.h" // Checks if the code we built is valid
+#include "llvm/IR/Verifier.h"
 #include <iostream>
 
 using namespace llvm;
