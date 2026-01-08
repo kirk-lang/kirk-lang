@@ -37,6 +37,21 @@ static std::unique_ptr<ExprAST> ParsePrimary() {
   if (CurTok == tok_number)
     return ParseNumberExpr();
 
+  // Handle parenthesized expressions
+  if (CurTok == '(') {
+    getNextToken(); // consume '('
+    auto V = ParseExpression();
+    if (!V)
+      return nullptr;
+
+    if (CurTok != ')') {
+      std::cerr << "Error: expected ')'\n";
+      return nullptr;
+    }
+    getNextToken(); // consume ')'
+    return V;
+  }
+
   std::cerr << "Error: unknown token when expecting an expression!\n";
   return nullptr;
 }
