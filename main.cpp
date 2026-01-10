@@ -19,43 +19,67 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  InitializeModule(); // Initialize LLVM
-  auto AST = Parse();
+  InitializeModule(); // Initialize LLVM Context, Module, Builder
+  InitializePrecedence();
 
-  if (AST) {
-    FunctionType *PrintfType =
-        FunctionType::get(Type::getInt32Ty(*TheContext),
-                          {PointerType::getUnqual(*TheContext)}, true);
-    Function *PrintfFunc = Function::Create(
-        PrintfType, Function::ExternalLinkage, "printf", TheModule.get());
+  // Setup the main function wrapper to hold all the code
+  FunctionType *PrintfType =
+      FunctionType::get(Type::getInt32Ty(*TheContext),
+                        {PointerType::getUnqual(*TheContext)}, true);
+  Function *PrintfFunc = Function::Create(PrintfType, Function::ExternalLinkage,
+                                          "printf", TheModule.get());
 
-    FunctionType *FT = FunctionType::get(Type::getInt32Ty(*TheContext), false);
-    Function *TheFunction = Function::Create(FT, Function::ExternalLinkage,
-                                             "main", TheModule.get());
+  FunctionType *FT = FunctionType::get(Type::getInt32Ty(*TheContext), false);
+  Function *TheFunction =
+      Function::Create(FT, Function::ExternalLinkage, "main", TheModule.get());
 
-    // Creating code
-    BasicBlock *BB = BasicBlock::Create(*TheContext, "entry", TheFunction);
-    Builder->SetInsertPoint(BB);
+  BasicBlock *Entry = BasicBlock::Create(*TheContext, "entry", TheFunction);
+  Builder->SetInsertPoint(Entry);
 
-    // IR generation
-    Value *Result = AST->codegen();
+  // Setup the global string for printf once
+  Value *FormatStr = Builder->CreateGlobalString("%.2f\n");
 
-    if (Result) {
-      Value *FormatStr = Builder->CreateGlobalString("%.2f\n");
-      Builder->CreateCall(PrintfFunc, {FormatStr, Result});
-      Builder->CreateRet(ConstantInt::get(*TheContext, APInt(32, 0)));
-      verifyFunction(*TheFunction);
+  // Load the first token before entering the loop
+  getNextToken();
 
-      std::error_code EC;
-      raw_fd_ostream OutFile("output.ll", EC);
-      if (!EC) {
-        TheModule->print(OutFile, nullptr);
+  // Main Loop
+  while (true) {
+    if (CurTok == TOK_EOF)
+      break; // Stop if end of file
+
+    if (CurTok == ';') {
+      getNextToken(); // Skip semicolons
+      continue;
+    }
+
+    // Parse the next expression
+    auto AST = ParseExpression();
+
+    if (AST) {
+      // Generate IR for this line
+      Value *Result = AST->codegen();
+
+      if (Result) {
+        Builder->CreateCall(PrintfFunc, {FormatStr, Result});
       }
     } else {
-      std::cerr << "Error: codegen() returned nullptr\n";
+      // Error Recovery: Skip token and try again
+      getNextToken();
     }
+  }
+
+  // Only after the loop ends (EOF), we add the return statement.
+  Builder->CreateRet(ConstantInt::get(*TheContext, APInt(32, 0)));
+  // Verify and Print
+  verifyFunction(*TheFunction);
+
+  std::error_code EC;
+  raw_fd_ostream OutFile("output.ll", EC);
+  if (!EC) {
+    TheModule->print(OutFile, nullptr);
+    std::cout << "Successfully compiled to output.ll\n";
   } else {
-    std::cerr << "Error parsing file.\n";
+    std::cerr << "Error writing file: " << EC.message() << "\n";
   }
 
   return 0;
