@@ -5,11 +5,20 @@
 #include <map>
 
 // Current state of the Parser
-static int CurTok; // The current token the parser is looking at
+int CurTok; // The current token the parser is looking at
 static std::map<char, int> BinopPrecedence; // Precedence table: '*' > '+'
 
 // Reads the next token from the Lexer and updates CurTok
-static int getNextToken() { return CurTok = gettok(); }
+int getNextToken() { return CurTok = gettok(); }
+
+void InitializePrecedence() {
+  BinopPrecedence['<'] = 10;
+  BinopPrecedence['+'] = 20;
+  BinopPrecedence['-'] = 20;
+  BinopPrecedence['*'] = 40;
+  BinopPrecedence['/'] = 40;
+  BinopPrecedence['%'] = 40;
+}
 
 // Returns the priority of the current operator. If it's not an operator (like a
 // number), returns -1.
@@ -138,15 +147,6 @@ std::unique_ptr<ExprAST> ParseExpression() {
 
 // Parse API
 std::unique_ptr<ExprAST> Parse() {
-  // Initialize Precedence Table
-  BinopPrecedence['<'] = 10;
-  BinopPrecedence['+'] = 20;
-  BinopPrecedence['-'] = 20;
-  BinopPrecedence['*'] = 40;
-  BinopPrecedence['/'] = 40;
-  BinopPrecedence['%'] = 40;
-
   getNextToken();
-
   return ParseExpression();
 }
