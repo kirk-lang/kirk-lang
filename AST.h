@@ -36,4 +36,22 @@ public:
   llvm::Value *codegen() override;
 };
 
+// Assignment Node, represents things like "x = 5 + 2"
+class AssignmentAST : public ExprAST {
+  std::string Name;
+  std::unique_ptr<ExprAST> RHS;
+
+public:
+  AssignmentAST(std::string Name, std::unique_ptr<ExprAST> RHS)
+      : Name(Name), RHS(std::move(RHS)) {}
+};
+
+// Variable Node, represents variable name like "x", "y", etc.
+class VariableExprAST : public ExprAST {
+  std::string Name;
+
+public:
+  VariableExprAST(std::string Name) : Name(Name) {}
+};
+
 #endif
