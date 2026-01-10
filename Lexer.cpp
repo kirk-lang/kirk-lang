@@ -13,11 +13,11 @@ int gettok() {
   while (isspace(LastChar))
     LastChar = SourceFile.get();
 
-  // Identifiers of the types: id = [a-zA-Z][a-zA-Z0-9]*
+  // Identifiers of the types: id = [_a-zA-Z][_a-zA-Z0-9]*
   if (isalpha(LastChar)) {
     IdentifierStr = LastChar;
 
-    while (isalnum(LastChar = SourceFile.get())) {
+    while (isalnum(LastChar = SourceFile.get()) || LastChar == '_') {
       IdentifierStr += LastChar;
     }
 
