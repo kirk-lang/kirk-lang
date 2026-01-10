@@ -1,4 +1,5 @@
 #include "Parser.h"
+#include "AST.h"
 #include "Lexer.h"
 #include <iostream>
 #include <map>
@@ -32,28 +33,57 @@ static std::unique_ptr<ExprAST> ParseNumberExpr() {
   return Result;
 }
 
+static std::unique_ptr<ExprAST> ParseIdentifierExpr() {
+  std::string IdName = IdentifierStr;
+  getNextToken();
+
+  if (CurTok == TOK_ASSIGN) {
+    getNextToken();
+
+    auto RHS = ParseExpression();
+    if (!RHS) {
+      return nullptr;
+    }
+
+    // Variable Assignmnent
+    return std::make_unique<AssignmentExprAST>(IdName, std::move(RHS));
+  }
+
+  // Variable Reference
+  return std::make_unique<VariableExprAST>(IdName);
+}
+
 // "Primary" means the basic building blocks: numbers or parentheses.
 static std::unique_ptr<ExprAST> ParsePrimary() {
-  if (CurTok == TOK_NUMBER)
+  switch (CurTok) {
+  default:
+    std::cerr << "Error: unknown token when expecting an expression!\n";
+    return nullptr;
+
+  // Handle Identifiers (Variables)
+  case TOK_IDENTIFIER:
+    return ParseIdentifierExpr();
+
+  // Handle Numbers
+  case TOK_NUMBER:
     return ParseNumberExpr();
 
-  // Handle parenthesized expressions
-  if (CurTok == '(') {
-    getNextToken(); // consume '('
+  // Handle Parentheses
+  case '(':
+    getNextToken(); // eat '('
     auto V = ParseExpression();
     if (!V)
       return nullptr;
 
     if (CurTok != ')') {
+
       std::cerr << "Error: expected ')'\n";
       return nullptr;
     }
-    getNextToken(); // consume ')'
+
+    getNextToken(); // eat ')'
     return V;
   }
-
-  std::cerr << "Error: unknown token when expecting an expression!\n";
-  return nullptr;
 }
 
 // This function handles the "Right Hand Side" of an expression.

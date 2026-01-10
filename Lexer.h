@@ -6,6 +6,7 @@
 
 extern std::ifstream SourceFile;
 extern double NumVal;
+extern std::string IdentifierStr;
 
 enum Token {
   TOK_EOF = -1,
