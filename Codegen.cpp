@@ -38,13 +38,15 @@ Value *BinaryExprAST::codegen() {
   // Create the instruction based on the operator
   switch (Op) {
   case '+':
-    return Builder->CreateFAdd(L, R, "addtmp");
+    return Builder->CreateFAdd(L, R);
   case '-':
-    return Builder->CreateFSub(L, R, "subtmp");
+    return Builder->CreateFSub(L, R);
   case '*':
-    return Builder->CreateFMul(L, R, "multmp");
+    return Builder->CreateFMul(L, R);
   case '/':
-    return Builder->CreateFDiv(L, R, "divtmp");
+    return Builder->CreateFDiv(L, R);
+  case '%':
+    return Builder->CreateFRem(L, R);
   default:
     std::cerr << "Error: invalid binary operator" << std::endl;
     return nullptr;

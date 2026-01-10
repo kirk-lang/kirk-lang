@@ -114,6 +114,7 @@ std::unique_ptr<ExprAST> Parse() {
   BinopPrecedence['-'] = 20;
   BinopPrecedence['*'] = 40;
   BinopPrecedence['/'] = 40;
+  BinopPrecedence['%'] = 40;
 
   getNextToken();
 
