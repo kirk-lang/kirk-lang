@@ -1,1 +1,7 @@
-3 * (5 % 3) - 5
+width = 10
+height = 5
+
+area = width * height
+width = 20
+new_area = width * height
+result = (width + height) * 2
