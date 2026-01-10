@@ -9,6 +9,8 @@ std::unique_ptr<LLVMContext> TheContext;
 std::unique_ptr<IRBuilder<>> Builder;
 std::unique_ptr<Module> TheModule;
 
+std::map<std::string, AllocaInst *> NamedValues;
+
 void InitializeModule() {
   // Holds types and constants
   TheContext = std::make_unique<LLVMContext>();
@@ -51,4 +53,52 @@ Value *BinaryExprAST::codegen() {
     std::cerr << "Error: invalid binary operator" << std::endl;
     return nullptr;
   }
+}
+
+// This creates an alloca instruction in the entry block of a function
+AllocaInst *CreateEntryBlockAlloca(Function *TheFunction,
+                                   const std::string &VarName) {
+  IRBuilder<> TmpB(&TheFunction->getEntryBlock(),
+                   TheFunction->getEntryBlock().begin());
+  return TmpB.CreateAlloca(Type::getDoubleTy(*TheContext), 0, VarName.c_str());
+}
+
+Value *VariableExprAST::codegen() {
+  // Look up the variable in the symbol table
+  AllocaInst *A = NamedValues[Name];
+  if (!A) {
+    std::cerr << "Unknown variable name: " << Name << "\n";
+    return nullptr;
+  }
+
+  // Generate a Load instruction, args: type, address, name
+  return Builder->CreateLoad(A->getAllocatedType(), A, Name.c_str());
+}
+
+llvm::Value *AssignmentExprAST::codegen() {
+  // Generate code for the RHS first
+  Value *Val = RHS->codegen();
+  if (!Val)
+    return nullptr;
+
+  // Look up the variable
+  AllocaInst *Alloca = NamedValues[Name];
+
+  // If it doesn't exist, create it (declaration + assignment)
+  if (!Alloca) {
+    // Get the current function we are generating code into
+    Function *TheFunction = Builder->GetInsertBlock()->getParent();
+
+    // Create the 'alloca' for this variable
+    Alloca = CreateEntryBlockAlloca(TheFunction, Name);
+
+    // Add it to the Symbol Table so we can find it later
+    NamedValues[Name] = Alloca;
+  }
+
+  // Generate the Store instruction
+  Builder->CreateStore(Val, Alloca);
+
+  // Assignment expressions usually return the value assigned (allows x = y = 5)
+  return Val;
 }
