@@ -34,7 +34,7 @@ static std::unique_ptr<ExprAST> ParseNumberExpr() {
 
 // "Primary" means the basic building blocks: numbers or parentheses.
 static std::unique_ptr<ExprAST> ParsePrimary() {
-  if (CurTok == tok_number)
+  if (CurTok == TOK_NUMBER)
     return ParseNumberExpr();
 
   // Handle parenthesized expressions

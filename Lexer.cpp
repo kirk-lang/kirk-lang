@@ -20,11 +20,11 @@ int gettok() {
     } while (isdigit(LastChar) || LastChar == '.');
 
     NumVal = strtod(NumStr.c_str(), 0);
-    return tok_number;
+    return TOK_NUMBER;
   }
 
   if (LastChar == EOF)
-    return tok_eof;
+    return TOK_EOF;
 
   int ThisChar = LastChar;
   LastChar = SourceFile.get();
