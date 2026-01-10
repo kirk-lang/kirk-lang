@@ -37,13 +37,15 @@ public:
 };
 
 // Assignment Node, represents things like "x = 5 + 2"
-class AssignmentAST : public ExprAST {
+class AssignmentExprAST : public ExprAST {
   std::string Name;
   std::unique_ptr<ExprAST> RHS;
 
 public:
-  AssignmentAST(std::string Name, std::unique_ptr<ExprAST> RHS)
+  AssignmentExprAST(std::string Name, std::unique_ptr<ExprAST> RHS)
       : Name(Name), RHS(std::move(RHS)) {}
+
+  llvm::Value *codegen() override;
 };
 
 // Variable Node, represents variable name like "x", "y", etc.
@@ -52,6 +54,8 @@ class VariableExprAST : public ExprAST {
 
 public:
   VariableExprAST(std::string Name) : Name(Name) {}
+
+  llvm::Value *codegen() override;
 };
 
 #endif
