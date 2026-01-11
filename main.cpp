@@ -3,6 +3,7 @@
 #include "Parser.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/Support/raw_ostream.h"
+#include <fstream>
 #include <iostream>
 
 using namespace llvm;
@@ -17,6 +18,13 @@ int main(int argc, char **argv) {
   if (!SourceFile.is_open()) {
     std::cerr << "Error: Could not open file " << argv[1] << "\n";
     return 1;
+  }
+
+  // Read file into memory for error printing
+  std::ifstream File(argv[1]);
+  std::string Line;
+  while (std::getline(File, Line)) {
+    SourceLines.push_back(Line);
   }
 
   InitializeModule(); // Initialize LLVM Context, Module, Builder

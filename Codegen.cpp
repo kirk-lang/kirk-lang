@@ -1,6 +1,7 @@
 #include "Codegen.h"
 #include "AST.h"
 #include "Algorithms.h"
+#include "Lexer.h"
 #include "llvm/IR/Verifier.h"
 #include <iostream>
 
@@ -73,7 +74,7 @@ Value *VariableExprAST::codegen() {
     return Builder->CreateLoad(A->getAllocatedType(), A, Name.c_str());
   }
 
-  std::cerr << "Error: Unknown variable name: '" << Name << "'";
+  std::string ErrorMsg = "Unknown variable name: '" + Name + "'";
 
   if (Name.length() > 2) {
     std::vector<std::string> Candidates;
@@ -96,18 +97,18 @@ Value *VariableExprAST::codegen() {
 
     // Print suggestions if we found any
     if (!Candidates.empty()) {
-      std::cerr << ". Maybe you meant: ";
+      ErrorMsg += ". Maybe you meant: ";
       for (size_t i = 0; i < Candidates.size(); ++i) {
-        std::cerr << "'" << Candidates[i] << "'";
+        ErrorMsg += "'" + Candidates[i] + "'";
         // Add a comma if it's not the last one
         if (i != Candidates.size() - 1)
-          std::cerr << ", ";
+          ErrorMsg += ", ";
       }
-      std::cerr << "?";
+      ErrorMsg += "?";
     }
   }
 
-  std::cerr << "\n";
+  LogErrorAt(Loc, ErrorMsg);
   exit(1);
 }
 

@@ -1,6 +1,7 @@
 #ifndef AST_H
 #define AST_H
 
+#include "Lexer.h"
 #include "llvm/IR/Value.h"
 #include <memory>
 
@@ -51,9 +52,11 @@ public:
 // Variable Node, represents variable name like "x", "y", etc.
 class VariableExprAST : public ExprAST {
   std::string Name;
+  SourceLocation Loc;
 
 public:
-  VariableExprAST(std::string Name) : Name(Name) {}
+  VariableExprAST(SourceLocation Loc, std::string Name)
+      : Loc(Loc), Name(Name) {}
 
   llvm::Value *codegen() override;
 };
