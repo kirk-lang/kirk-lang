@@ -1,5 +1,6 @@
 #include "Parser.h"
 #include "AST.h"
+#include "Errors.h"
 #include "Lexer.h"
 #include <iostream>
 #include <map>
@@ -73,7 +74,7 @@ static std::unique_ptr<ExprAST> ParseParenExpr() {
     return nullptr;
 
   if (CurTok != ')') {
-    LogErrorAt(CurLoc, "expected ')'");
+    SyntaxError(CurLoc, "Expected ')'").raise();
     return nullptr;
   }
   getNextToken(); // eat ')'

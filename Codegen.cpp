@@ -1,6 +1,7 @@
 #include "Codegen.h"
 #include "AST.h"
 #include "Algorithms.h"
+#include "Errors.h"
 #include "Lexer.h"
 #include "llvm/IR/Verifier.h"
 #include <iostream>
@@ -74,42 +75,8 @@ Value *VariableExprAST::codegen() {
     return Builder->CreateLoad(A->getAllocatedType(), A, Name.c_str());
   }
 
-  std::string ErrorMsg = "Unknown variable name: '" + Name + "'";
-
-  if (Name.length() > 2) {
-    std::vector<std::string> Candidates;
-
-    // Iterate over all defined variables
-    for (const auto &pair : NamedValues) {
-      const std::string &KnownVar = pair.first;
-
-      if (KnownVar == Name)
-        continue;
-
-      // Calculate distance
-      int Dist = getLevenshteinDistance(Name, KnownVar);
-
-      // If close enough (distance <= 2), add to candidates
-      if (Dist <= 2) {
-        Candidates.push_back(KnownVar);
-      }
-    }
-
-    // Print suggestions if we found any
-    if (!Candidates.empty()) {
-      ErrorMsg += ". Maybe you meant: ";
-      for (size_t i = 0; i < Candidates.size(); ++i) {
-        ErrorMsg += "'" + Candidates[i] + "'";
-        // Add a comma if it's not the last one
-        if (i != Candidates.size() - 1)
-          ErrorMsg += ", ";
-      }
-      ErrorMsg += "?";
-    }
-  }
-
-  LogErrorAt(Loc, ErrorMsg);
-  exit(1);
+  ReferenceError(Loc, Name, NamedValues).raise();
+  return nullptr;
 }
 
 llvm::Value *AssignmentExprAST::codegen() {
