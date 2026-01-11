@@ -2,11 +2,21 @@
 #define LEXER_H
 
 #include <fstream>
+#include <memory>
 #include <string>
+#include <vector>
+
+struct SourceLocation {
+  int Line;
+  int Col;
+};
 
 extern std::ifstream SourceFile;
 extern double NumVal;
 extern std::string IdentifierStr;
+
+extern std::vector<std::string> SourceLines;
+extern SourceLocation CurLoc;
 
 enum Token {
   TOK_EOF = -1,
@@ -16,5 +26,6 @@ enum Token {
 };
 
 int gettok();
+void LogErrorAt(SourceLocation Loc, const std::string &Msg);
 
 #endif
