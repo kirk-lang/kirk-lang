@@ -1,5 +1,6 @@
 #include "Codegen.h"
 #include "AST.h"
+#include "Algorithms.h"
 #include "llvm/IR/Verifier.h"
 #include <iostream>
 
@@ -65,14 +66,49 @@ AllocaInst *CreateEntryBlockAlloca(Function *TheFunction,
 
 Value *VariableExprAST::codegen() {
   // Look up the variable in the symbol table
-  AllocaInst *A = NamedValues[Name];
-  if (!A) {
-    std::cerr << "Unknown variable name: " << Name << "\n";
-    return nullptr;
+  auto Iter = NamedValues.find(Name);
+  AllocaInst *A = (Iter != NamedValues.end()) ? Iter->second : nullptr;
+
+  if (A) {
+    return Builder->CreateLoad(A->getAllocatedType(), A, Name.c_str());
   }
 
-  // Generate a Load instruction, args: type, address, name
-  return Builder->CreateLoad(A->getAllocatedType(), A, Name.c_str());
+  std::cerr << "Error: Unknown variable name: '" << Name << "'";
+
+  if (Name.length() > 2) {
+    std::vector<std::string> Candidates;
+
+    // Iterate over all defined variables
+    for (const auto &pair : NamedValues) {
+      const std::string &KnownVar = pair.first;
+
+      if (KnownVar == Name)
+        continue;
+
+      // Calculate distance
+      int Dist = getLevenshteinDistance(Name, KnownVar);
+
+      // If close enough (distance <= 2), add to candidates
+      if (Dist <= 2) {
+        Candidates.push_back(KnownVar);
+      }
+    }
+
+    // Print suggestions if we found any
+    if (!Candidates.empty()) {
+      std::cerr << ". Maybe you meant: ";
+      for (size_t i = 0; i < Candidates.size(); ++i) {
+        std::cerr << "'" << Candidates[i] << "'";
+        // Add a comma if it's not the last one
+        if (i != Candidates.size() - 1)
+          std::cerr << ", ";
+      }
+      std::cerr << "?";
+    }
+  }
+
+  std::cerr << "\n";
+  exit(1);
 }
 
 llvm::Value *AssignmentExprAST::codegen() {
