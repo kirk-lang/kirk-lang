@@ -42,8 +42,11 @@ static std::unique_ptr<ExprAST> ParseNumberExpr() {
   return Result;
 }
 
+// Called when CurTok is an Assignment or Reference
 static std::unique_ptr<ExprAST> ParseIdentifierExpr() {
   std::string IdName = IdentifierStr;
+  SourceLocation VarLoc = CurLoc;
+
   getNextToken();
 
   if (CurTok == TOK_ASSIGN) {
@@ -59,39 +62,39 @@ static std::unique_ptr<ExprAST> ParseIdentifierExpr() {
   }
 
   // Variable Reference
-  return std::make_unique<VariableExprAST>(IdName);
+  return std::make_unique<VariableExprAST>(VarLoc, IdName);
+}
+
+// Parse Parentheses
+static std::unique_ptr<ExprAST> ParseParenExpr() {
+  getNextToken(); // eat '('
+  auto V = ParseExpression();
+  if (!V)
+    return nullptr;
+
+  if (CurTok != ')') {
+    LogErrorAt(CurLoc, "expected ')'");
+    return nullptr;
+  }
+  getNextToken(); // eat ')'
+  return V;
 }
 
 // "Primary" means the basic building blocks: numbers or parentheses.
 static std::unique_ptr<ExprAST> ParsePrimary() {
   switch (CurTok) {
   default:
-    std::cerr << "Error: unknown token when expecting an expression!\n";
+    LogErrorAt(CurLoc, "unknown token when expecting an expression");
     return nullptr;
 
-  // Handle Identifiers (Variables)
   case TOK_IDENTIFIER:
     return ParseIdentifierExpr();
 
-  // Handle Numbers
   case TOK_NUMBER:
     return ParseNumberExpr();
 
-  // Handle Parentheses
   case '(':
-    getNextToken(); // eat '('
-    auto V = ParseExpression();
-    if (!V)
-      return nullptr;
-
-    if (CurTok != ')') {
-
-      std::cerr << "Error: expected ')'\n";
-      return nullptr;
-    }
-
-    getNextToken(); // eat ')'
-    return V;
+    return ParseParenExpr();
   }
 }
 
@@ -147,6 +150,8 @@ std::unique_ptr<ExprAST> ParseExpression() {
 
 // Parse API
 std::unique_ptr<ExprAST> Parse() {
-  getNextToken();
+  if (CurTok == 0)
+    getNextToken();
+
   return ParseExpression();
 }
