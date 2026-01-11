@@ -12,9 +12,9 @@ if ! command -v llvm-config &> /dev/null; then
 fi
 
 echo -e "${GREEN}[1 / 2]${RESET} ${BOLD}Updating the Kirk Compiler...${RESET}"
-echo -e "        ${BLUE}Sources:${RESET} main.cpp Lexer.cpp Parser.cpp Codegen.cpp"
+echo -e "        ${BLUE}Sources:${RESET} main.cpp Lexer.cpp Parser.cpp Codegen.cpp Algorithms.cpp"
 
-clang++ main.cpp Lexer.cpp Parser.cpp Codegen.cpp `llvm-config --cxxflags --ldflags --system-libs --libs core` -o kirk
+clang++ main.cpp Lexer.cpp Parser.cpp Codegen.cpp Algorithms.cpp `llvm-config --cxxflags --ldflags --system-libs --libs core` -o kirk
 
 echo -e "${GREEN}[2 / 2]${RESET} ${BOLD}Verifying build...${RESET}"
 

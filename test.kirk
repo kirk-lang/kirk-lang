@@ -1,7 +1,5 @@
-width = 10
+width = 20
 height = 5
 
-area = width * height
-width = 20
-new_area = width * height
-result = (width + height) * 2
+area = widhh * height
+
