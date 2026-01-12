@@ -2,7 +2,6 @@
 #define PARSER_H
 
 #include "AST.h"
-#include <memory>
 
 // Expose all variables and functions to other files
 extern int CurTok;

@@ -6,8 +6,6 @@
 
 std::vector<std::string> SourceLines;
 SourceLocation CurLoc = {1, 0};
-int CurLine = 1;
-int CurCol = 0;
 
 std::ifstream SourceFile;
 double NumVal;
@@ -29,24 +27,25 @@ void LogErrorAt(SourceLocation Loc, const std::string &Msg) {
 
 int gettok() {
   static int LastChar = ' ';
+  static SourceLocation TokStartLoc = {1, 0};
 
   while (isspace(LastChar)) {
     // Handle newlines to track line numbers
     if (LastChar == '\n') {
-      CurLine++;
-      CurCol = 0;
+      TokStartLoc.Line++;
+      TokStartLoc.Col = 0;
     }
 
     LastChar = SourceFile.get();
 
     // Increment column for every character read
     if (LastChar != EOF) {
-      CurCol++;
+      TokStartLoc.Col++;
     }
   }
 
   // Snapshot the location before parsing the token body
-  CurLoc = {CurLine, CurCol};
+  CurLoc = TokStartLoc;
 
   // Identifiers of the types: id = [a-zA-Z][a-zA-Z0-9_]*
   if (isalpha(LastChar)) {
@@ -54,7 +53,7 @@ int gettok() {
 
     while (isalnum(LastChar = SourceFile.get()) || LastChar == '_') {
       IdentifierStr += LastChar;
-      CurCol++;
+      TokStartLoc.Col++;
     }
 
     return TOK_IDENTIFIER;
@@ -66,7 +65,7 @@ int gettok() {
     do {
       NumStr += LastChar;
       LastChar = SourceFile.get();
-      CurCol++;
+      TokStartLoc.Col++;
     } while (isdigit(LastChar) || LastChar == '.');
 
     NumVal = strtod(NumStr.c_str(), 0);
@@ -75,7 +74,7 @@ int gettok() {
 
   if (LastChar == '=') {
     LastChar = SourceFile.get();
-    CurCol++;
+    TokStartLoc.Col++;
     return TOK_ASSIGN;
   }
 
@@ -85,7 +84,7 @@ int gettok() {
   // Handle ASCII characters
   int ThisChar = LastChar;
   LastChar = SourceFile.get();
-  CurCol++;
+  TokStartLoc.Col++;
 
   return ThisChar;
 }

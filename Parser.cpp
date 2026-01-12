@@ -1,5 +1,4 @@
 #include "Parser.h"
-#include "AST.h"
 #include "Errors.h"
 #include "Lexer.h"
 #include <iostream>
@@ -33,8 +32,6 @@ static int GetTokPrecedence() {
 
   return TokPrec;
 }
-
-std::unique_ptr<ExprAST> ParseExpression();
 
 // Called when CurTok is a Number.
 static std::unique_ptr<ExprAST> ParseNumberExpr() {

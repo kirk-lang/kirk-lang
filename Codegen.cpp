@@ -2,8 +2,6 @@
 #include "AST.h"
 #include "Algorithms.h"
 #include "Errors.h"
-#include "Lexer.h"
-#include "llvm/IR/Verifier.h"
 #include <iostream>
 
 using namespace llvm;
