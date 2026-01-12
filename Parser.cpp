@@ -2,8 +2,8 @@
 #include "AST.h"
 #include "Errors.h"
 #include "Lexer.h"
-#include <iostream>
 #include <map>
+#include <memory>
 
 // Current state of the Parser
 int CurTok; // The current token the parser is looking at
@@ -138,6 +138,14 @@ static std::unique_ptr<ExprAST> ParseBinOpRHS(int ExprPrec,
     LHS =
         std::make_unique<BinaryExprAST>(BinOp, std::move(LHS), std::move(RHS));
   }
+}
+
+std::unique_ptr<ExprAST> ParseIfExpr() {
+  getNextToken(); // Eating the if expression
+
+  auto Cond = ParseExpression();
+  if (!Cond)
+    return nullptr;
 }
 
 // Entry point for parsing

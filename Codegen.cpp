@@ -79,7 +79,7 @@ Value *VariableExprAST::codegen() {
   return nullptr;
 }
 
-llvm::Value *AssignmentExprAST::codegen() {
+Value *AssignmentExprAST::codegen() {
   // Generate code for the RHS first
   Value *Val = RHS->codegen();
   if (!Val)
@@ -105,4 +105,59 @@ llvm::Value *AssignmentExprAST::codegen() {
 
   // Assignment expressions usually return the value assigned (allows x = y = 5)
   return Val;
+}
+
+Value *IfExprAST::codegen() {
+  Value *CondV = Cond->codegen();
+  if (!CondV)
+    return nullptr;
+
+  // Convert condition to a boolean
+  CondV = Builder->CreateFCmpONE(
+      CondV, ConstantFP::get(*TheContext, APFloat(0.0)), "ifcond");
+
+  // Get the current function so we can insert blocks into it
+  Function *TheFunction = Builder->GetInsertBlock()->getParent();
+
+  // Create blocks for 'then', 'else', and 'merge'
+  BasicBlock *ThenBB = BasicBlock::Create(*TheContext, "then", TheFunction);
+  BasicBlock *ElseBB = BasicBlock::Create(*TheContext, "else");
+  BasicBlock *MergeBB = BasicBlock::Create(*TheContext, "ifcont");
+
+  // Create the Conditional Branch
+  // "If CondV is true, go to ThenBB, otherwise go to ElseBB"
+  Builder->CreateCondBr(CondV, ThenBB, ElseBB);
+
+  Builder->SetInsertPoint(ThenBB);
+
+  Value *ThenV = Then->codegen();
+  if (!ThenV)
+    return nullptr;
+
+  Builder->CreateBr(MergeBB);
+  ThenBB = Builder->GetInsertBlock();
+
+  TheFunction->insert(TheFunction->end(), ElseBB);
+  Builder->SetInsertPoint(ElseBB);
+
+  Value *ElseV = Else->codegen();
+  if (!ElseV)
+    return nullptr;
+
+  Builder->CreateBr(MergeBB);
+  ElseBB = Builder->GetInsertBlock();
+
+  TheFunction->insert(TheFunction->end(), MergeBB);
+  Builder->SetInsertPoint(MergeBB);
+
+  // The PHI Node
+  // Since 'if' is an expression, it must return a value.
+  // The PHI node says: "If we came from ThenBB, use ThenV. If from ElseBB, use
+  // ElseV."
+  PHINode *PN = Builder->CreatePHI(Type::getDoubleTy(*TheContext), 2, "iftmp");
+
+  PN->addIncoming(ThenV, ThenBB);
+  PN->addIncoming(ElseV, ElseBB);
+
+  return PN;
 }
