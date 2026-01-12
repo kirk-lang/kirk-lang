@@ -40,6 +40,9 @@ Thumbs.db
 # Debug
 *.dSYM/
 
+# CodeQL
+_codeql_detected_source_root
+
 # File Binary
 kirk
 program
