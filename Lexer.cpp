@@ -3,6 +3,7 @@
 #include <cctype>
 #include <cstdlib>
 #include <iostream>
+#include <map>
 
 std::vector<std::string> SourceLines;
 SourceLocation CurLoc = {1, 0};
@@ -30,6 +31,9 @@ void LogErrorAt(SourceLocation Loc, const std::string &Msg) {
 int gettok() {
   static int LastChar = ' ';
 
+  static std::map<std::string, int> Keywords = {
+      {"if", TOK_IF}, {"then", TOK_THEN}, {"else", TOK_ELSE}};
+
   while (isspace(LastChar)) {
     // Handle newlines to track line numbers
     if (LastChar == '\n') {
@@ -55,6 +59,12 @@ int gettok() {
     while (isalnum(LastChar = SourceFile.get()) || LastChar == '_') {
       IdentifierStr += LastChar;
       CurCol++;
+    }
+
+    // Check for keywords
+    auto It = Keywords.find(IdentifierStr);
+    if (It != Keywords.end()) {
+      return It->second;
     }
 
     return TOK_IDENTIFIER;
