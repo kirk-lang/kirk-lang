@@ -84,4 +84,15 @@ public:
   llvm::Value *codegen() override;
 };
 
+// Block Expression, represents { expr1; expr2; ... }
+class BlockExprAST : public ExprAST {
+  std::vector<std::unique_ptr<ExprAST>> Expressions;
+
+public:
+  BlockExprAST(std::vector<std::unique_ptr<ExprAST>> Expressions)
+      : Expressions(std::move(Expressions)) {}
+
+  llvm::Value *codegen() override;
+};
+
 #endif

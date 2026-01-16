@@ -181,3 +181,11 @@ Value *UnaryExprAST::codegen() {
     return nullptr;
   }
 }
+
+Value *BlockExprAST::codegen() {
+  Value *LastVal = nullptr;
+  for (auto &Expr : Expressions) {
+    LastVal = Expr->codegen();
+  }
+  return LastVal;
+}

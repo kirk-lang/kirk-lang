@@ -37,6 +37,7 @@ static int GetTokPrecedence() {
 
 std::unique_ptr<ExprAST> ParseExpression();
 std::unique_ptr<ExprAST> ParseUnary();
+std::unique_ptr<ExprAST> ParseBlock();
 
 // Called when CurTok is a Number.
 static std::unique_ptr<ExprAST> ParseNumberExpr() {
@@ -90,13 +91,19 @@ std::unique_ptr<ExprAST> ParseIfExpr() {
   if (!Cond)
     return nullptr;
 
-  if (CurTok != TOK_THEN) {
-    LogErrorAt(CurLoc, "expected 'then'");
+  std::unique_ptr<ExprAST> Then;
+  std::unique_ptr<ExprAST> Else;
+
+  if (CurTok == TOK_THEN) {
+    getNextToken();
+    Then = ParseExpression();
+  } else if (CurTok == '{') {
+    Then = ParseBlock();
+  } else {
+    LogErrorAt(CurLoc, "Expected 'then' or '{' after if condition");
     return nullptr;
   }
-  getNextToken();
 
-  auto Then = ParseExpression();
   if (!Then)
     return nullptr;
 
@@ -106,7 +113,12 @@ std::unique_ptr<ExprAST> ParseIfExpr() {
   }
   getNextToken();
 
-  auto Else = ParseExpression();
+  if (CurTok == '{') {
+    Else = ParseBlock();
+  } else {
+    Else = ParseExpression();
+  }
+
   if (!Else)
     return nullptr;
 
@@ -206,4 +218,34 @@ std::unique_ptr<ExprAST> ParseUnary() {
     return std::make_unique<UnaryExprAST>(Opc, std::move(Operand));
 
   return nullptr;
+}
+
+std::unique_ptr<ExprAST> ParseBlock() {
+  if (CurTok != '{') {
+    LogErrorAt(CurLoc, "Expected '{'");
+    return nullptr;
+  }
+
+  getNextToken();
+  std::vector<std::unique_ptr<ExprAST>> Exprs;
+
+  while (CurTok != '}' && CurTok != TOK_EOF) {
+    if (CurTok == ';') {
+      getNextToken();
+      continue;
+    }
+
+    auto Expr = ParseExpression();
+    if (!Expr)
+      return nullptr;
+    Exprs.push_back(std::move(Expr));
+  }
+
+  if (CurTok != '}') {
+    LogErrorAt(CurLoc, "Expected '}'");
+    return nullptr;
+  }
+  getNextToken();
+
+  return std::make_unique<BlockExprAST>(std::move(Exprs));
 }
