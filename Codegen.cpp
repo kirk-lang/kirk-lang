@@ -167,3 +167,17 @@ Value *IfExprAST::codegen() {
 
   return PN;
 }
+
+Value *UnaryExprAST::codegen() {
+  Value *OperandV = Operand->codegen();
+  if (!OperandV)
+    return nullptr;
+
+  switch (Opcode) {
+  case '-':
+    return Builder->CreateFNeg(OperandV);
+  default:
+    SyntaxError(CurLoc, "Unknown unary operator");
+    return nullptr;
+  }
+}
