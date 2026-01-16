@@ -88,7 +88,27 @@ int gettok() {
   if (LastChar == '=') {
     LastChar = SourceFile.get();
     CurCol++;
+
+    if (LastChar == '=') {
+      LastChar = SourceFile.get();
+      CurCol++;
+      return TOK_EQ;
+    }
+
     return TOK_ASSIGN;
+  }
+
+  if (LastChar == '!') {
+    LastChar = SourceFile.get();
+    CurCol++;
+
+    if (LastChar == '=') {
+      LastChar = SourceFile.get();
+      CurCol++;
+      return TOK_NEQ;
+    }
+
+    return '!';
   }
 
   if (LastChar == EOF)

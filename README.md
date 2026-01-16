@@ -61,7 +61,7 @@ result = (width + height) * 2
 [x] Basic Arithmetic
 [x] Variables & Memory Assignment
 [x] Better Error Diagnostics
-[ ] Control Flow (if / else)
+[x] Control Flow (if / else)
 [ ] Comparison Operators (<, >, ==)
 [ ] Functions
 

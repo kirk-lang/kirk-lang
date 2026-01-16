@@ -9,3 +9,11 @@ if (x > 0) {
   result = 10.0
 }
 print(result)
+
+x = 5
+if (x == 5) {
+    result = 3
+} else {
+    result = 8
+}
+print(result)

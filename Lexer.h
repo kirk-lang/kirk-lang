@@ -26,7 +26,10 @@ enum Token {
   TOK_THEN = -5,
   TOK_ELSE = -6,
   TOK_IF = -7,
-  TOK_PRINT = -8
+  TOK_PRINT = -8,
+  TOK_WHILE = -9,
+  TOK_EQ = -10,
+  TOK_NEQ = -11
 };
 
 int gettok();

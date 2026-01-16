@@ -58,8 +58,12 @@ Value *BinaryExprAST::codegen() {
   case '>':
     L = Builder->CreateFCmpOGT(L, R);
     return Builder->CreateUIToFP(L, Type::getDoubleTy(*TheContext), "booltmp");
+  case TOK_EQ:
+    return Builder->CreateICmpEQ(L, R);
+  case TOK_NEQ:
+    return Builder->CreateICmpNE(L, R);
   default:
-    std::cerr << "Error: invalid binary operator" << std::endl;
+    SyntaxError(CurLoc, "Error: invalid binary operator");
     return nullptr;
   }
 }

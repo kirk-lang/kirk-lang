@@ -7,12 +7,14 @@
 
 // Current state of the Parser
 int CurTok; // The current token the parser is looking at
-static std::map<char, int> BinopPrecedence; // Precedence table: '*' > '+'
+static std::map<int, int> BinopPrecedence; // Precedence table: '*' > '+'
 
 // Reads the next token from the Lexer and updates CurTok
 int getNextToken() { return CurTok = gettok(); }
 
 void InitializePrecedence() {
+  BinopPrecedence[TOK_EQ] = 5;
+  BinopPrecedence[TOK_NEQ] = 5;
   BinopPrecedence['<'] = 10;
   BinopPrecedence['>'] = 10;
   BinopPrecedence['+'] = 20;
