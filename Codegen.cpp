@@ -64,7 +64,12 @@ Value *BinaryExprAST::codegen() {
   case TOK_NEQ:
     L = Builder->CreateFCmpONE(L, R);
     return Builder->CreateUIToFP(L, Type::getDoubleTy(*TheContext), "booltmp");
-
+  case TOK_GEQ:
+    L = Builder->CreateFCmpOGE(L, R);
+    return Builder->CreateUIToFP(L, Type::getDoubleTy(*TheContext));
+  case TOK_LEQ:
+    L = Builder->CreateFCmpOLE(L, R);
+    return Builder->CreateUIToFP(L, Type::getDoubleTy(*TheContext));
   default:
     SyntaxError(CurLoc, "Error: invalid binary operator");
     return nullptr;

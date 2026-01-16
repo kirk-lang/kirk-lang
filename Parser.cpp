@@ -17,6 +17,8 @@ void InitializePrecedence() {
   BinopPrecedence['>'] = 10;
   BinopPrecedence[TOK_EQ] = 10;
   BinopPrecedence[TOK_NEQ] = 10;
+  BinopPrecedence[TOK_GEQ] = 10;
+  BinopPrecedence[TOK_LEQ] = 10;
   BinopPrecedence['+'] = 20;
   BinopPrecedence['-'] = 20;
   BinopPrecedence['*'] = 40;

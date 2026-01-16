@@ -112,6 +112,32 @@ int gettok() {
     return '!';
   }
 
+  if (LastChar == '>') {
+    LastChar = SourceFile.get();
+    CurCol++;
+
+    if (LastChar == '=') {
+      LastChar = SourceFile.get();
+      CurCol++;
+      return TOK_GEQ;
+    }
+
+    return '>';
+  }
+
+  if (LastChar == '<') {
+    LastChar = SourceFile.get();
+    CurCol++;
+
+    if (LastChar == '=') {
+      LastChar = SourceFile.get();
+      CurCol++;
+      return TOK_LEQ;
+    }
+
+    return '<';
+  }
+
   if (LastChar == EOF)
     return TOK_EOF;
 
