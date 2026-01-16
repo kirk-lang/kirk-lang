@@ -70,6 +70,11 @@ Value *BinaryExprAST::codegen() {
   case TOK_LEQ:
     L = Builder->CreateFCmpOLE(L, R);
     return Builder->CreateUIToFP(L, Type::getDoubleTy(*TheContext));
+  case '^': {
+    Function *PowFunc = Intrinsic::getOrInsertDeclaration(
+        TheModule.get(), Intrinsic::pow, Type::getDoubleTy(*TheContext));
+    return Builder->CreateCall(PowFunc, {L, R}, "powtmp");
+  }
   default:
     SyntaxError(CurLoc, "Error: invalid binary operator");
     return nullptr;

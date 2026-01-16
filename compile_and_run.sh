@@ -38,7 +38,7 @@ echo -e "${GREEN}[2 / ${TOTAL_STEPS}]${RESET} ${BOLD}Generating object file (PIC
 llc -relocation-model=pic -filetype=obj output.ll -o output.o
 
 echo -e "${GREEN}[3 / ${TOTAL_STEPS}]${RESET} ${BOLD}Linking executable...${RESET}"
-clang output.o -o program
+clang output.o -o program -lm
 
 echo -e "${GREEN}[4 / ${TOTAL_STEPS}]${RESET} ${BOLD}Running program output:${RESET}"
 echo ""

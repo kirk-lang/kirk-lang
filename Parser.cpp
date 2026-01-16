@@ -24,6 +24,7 @@ void InitializePrecedence() {
   BinopPrecedence['*'] = 40;
   BinopPrecedence['/'] = 40;
   BinopPrecedence['%'] = 40;
+  BinopPrecedence['^'] = 50;
 }
 
 // Returns the priority of the current operator. If it's not an operator (like a
