@@ -58,12 +58,12 @@ result = (width + height) * 2
 
 ## Roadmap
 
-[x] Basic Arithmetic
-[x] Variables & Memory Assignment
-[x] Better Error Diagnostics
-[x] Control Flow (if / else)
-[x] Comparison Operators (<, >, ==)
-[ ] Functions
+- [x] Basic Arithmetic
+- [x] Variables & Memory Assignment
+- [x] Better Error Diagnostics
+- [x] Control Flow (if / else)
+- [x] Comparison Operators (<, >, ==)
+- [ ] Functions
 
 ## Status
 
