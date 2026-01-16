@@ -52,6 +52,12 @@ Value *BinaryExprAST::codegen() {
     return Builder->CreateFDiv(L, R);
   case '%':
     return Builder->CreateFRem(L, R);
+  case '<':
+    L = Builder->CreateFCmpOLT(L, R);
+    return Builder->CreateUIToFP(L, Type::getDoubleTy(*TheContext), "booltmp");
+  case '>':
+    L = Builder->CreateFCmpOGT(L, R);
+    return Builder->CreateUIToFP(L, Type::getDoubleTy(*TheContext), "booltmp");
   default:
     std::cerr << "Error: invalid binary operator" << std::endl;
     return nullptr;

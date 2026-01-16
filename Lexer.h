@@ -25,6 +25,7 @@ enum Token {
   TOK_ASSIGN = -4,
   TOK_THEN = -5,
   TOK_ELSE = -6,
+  TOK_IF = -7
 };
 
 int gettok();
