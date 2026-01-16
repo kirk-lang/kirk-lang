@@ -146,6 +146,29 @@ std::unique_ptr<ExprAST> ParseIfExpr() {
   auto Cond = ParseExpression();
   if (!Cond)
     return nullptr;
+
+  if (CurTok != TOK_THEN) {
+    LogErrorAt(CurLoc, "expected 'then'");
+    return nullptr;
+  }
+  getNextToken();
+
+  auto Then = ParseExpression();
+  if (!Then)
+    return nullptr;
+
+  if (CurTok != TOK_ELSE) {
+    LogErrorAt(CurLoc, "expected 'else'");
+    return nullptr;
+  }
+  getNextToken();
+
+  auto Else = ParseExpression();
+  if (!Else)
+    return nullptr;
+
+  return std::make_unique<IfExprAST>(std::move(Cond), std::move(Then),
+                                     std::move(Else));
 }
 
 // Entry point for parsing
