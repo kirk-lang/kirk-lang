@@ -189,3 +189,14 @@ Value *BlockExprAST::codegen() {
   }
   return LastVal;
 }
+
+Value *PrintExprAST::codegen() {
+  Value *Val = Expr->codegen();
+  if (!Val)
+    return nullptr;
+
+  Function *PrintfFunc = TheModule->getFunction("printf");
+  Value *FormatStr = Builder->CreateGlobalString("%.2f\n", "printstr");
+
+  return Builder->CreateCall(PrintfFunc, {FormatStr, Val}, "printcall");
+}

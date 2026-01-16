@@ -95,4 +95,12 @@ public:
   llvm::Value *codegen() override;
 };
 
+class PrintExprAST : public ExprAST {
+  std::unique_ptr<ExprAST> Expr;
+
+public:
+  PrintExprAST(std::unique_ptr<ExprAST> Expr) : Expr(std::move(Expr)) {}
+  llvm::Value *codegen() override;
+};
+
 #endif

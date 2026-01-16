@@ -31,8 +31,10 @@ void LogErrorAt(SourceLocation Loc, const std::string &Msg) {
 int gettok() {
   static int LastChar = ' ';
 
-  static std::map<std::string, int> Keywords = {
-      {"if", TOK_IF}, {"then", TOK_THEN}, {"else", TOK_ELSE}};
+  static std::map<std::string, int> Keywords = {{"if", TOK_IF},
+                                                {"then", TOK_THEN},
+                                                {"else", TOK_ELSE},
+                                                {"print", TOK_PRINT}};
 
   while (isspace(LastChar)) {
     // Handle newlines to track line numbers

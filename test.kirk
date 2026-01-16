@@ -1,12 +1,11 @@
 x = -5
-
-y = 3
-y = y + 1
-
 result = if (x > 0) then 5.0 else 10.0
+print(result)
 
+x = 3
 if (x > 0) {
   result = 5.0
 } else {
   result = 10.0
 }
+print(result)

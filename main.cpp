@@ -44,9 +44,6 @@ int main(int argc, char **argv) {
   BasicBlock *Entry = BasicBlock::Create(*TheContext, "entry", TheFunction);
   Builder->SetInsertPoint(Entry);
 
-  // Setup the global string for printf once
-  Value *FormatStr = Builder->CreateGlobalString("%.2f\n");
-
   // Load the first token before entering the loop
   getNextToken();
 
@@ -64,12 +61,7 @@ int main(int argc, char **argv) {
     auto AST = ParseExpression();
 
     if (AST) {
-      // Generate IR for this line
-      Value *Result = AST->codegen();
-
-      if (Result) {
-        Builder->CreateCall(PrintfFunc, {FormatStr, Result});
-      }
+      AST->codegen();
     } else {
       // Error Recovery: Skip token and try again
       getNextToken();
