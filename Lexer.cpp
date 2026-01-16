@@ -34,7 +34,8 @@ int gettok() {
   static std::map<std::string, int> Keywords = {{"if", TOK_IF},
                                                 {"then", TOK_THEN},
                                                 {"else", TOK_ELSE},
-                                                {"print", TOK_PRINT}};
+                                                {"print", TOK_PRINT},
+                                                {"while", TOK_WHILE}};
 
   while (isspace(LastChar)) {
     // Handle newlines to track line numbers

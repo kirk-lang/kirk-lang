@@ -207,3 +207,42 @@ Value *PrintExprAST::codegen() {
 
   return Builder->CreateCall(PrintfFunc, {FormatStr, Val}, "printcall");
 }
+
+Value *WhileExprAST::codegen() {
+  Function *TheFunction = Builder->GetInsertBlock()->getParent();
+
+  BasicBlock *LoopCondBB =
+      BasicBlock::Create(*TheContext, "loopcond", TheFunction);
+  BasicBlock *LoopBodyBB = BasicBlock::Create(*TheContext, "loopbody");
+  BasicBlock *AfterBB = BasicBlock::Create(*TheContext, "afterloop");
+
+  Builder->CreateBr(LoopCondBB);
+  Builder->SetInsertPoint(LoopCondBB);
+
+  Value *CondV = Cond->codegen();
+  if (!CondV)
+    return nullptr;
+
+  CondV = Builder->CreateFCmpONE(
+      CondV, ConstantFP::get(*TheContext, APFloat(0.0)), "loopcond");
+
+  // Conditional Branch: if true -> Body, else -> After
+  Builder->CreateCondBr(CondV, LoopBodyBB, AfterBB);
+
+  // Loop Body Block
+  TheFunction->insert(TheFunction->end(), LoopBodyBB);
+  Builder->SetInsertPoint(LoopBodyBB);
+
+  if (!Body->codegen())
+    return nullptr;
+
+  // Jump back to the condition to loop again
+  Builder->CreateBr(LoopCondBB);
+
+  // After Loop Block
+  TheFunction->insert(TheFunction->end(), AfterBB);
+  Builder->SetInsertPoint(AfterBB);
+
+  // While loops always return 0.0
+  return Constant::getNullValue(Type::getDoubleTy(*TheContext));
+}

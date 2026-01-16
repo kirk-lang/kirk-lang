@@ -103,4 +103,14 @@ public:
   llvm::Value *codegen() override;
 };
 
+class WhileExprAST : public ExprAST {
+  std::unique_ptr<ExprAST> Cond, Body;
+
+public:
+  WhileExprAST(std::unique_ptr<ExprAST> Cond, std::unique_ptr<ExprAST> Body)
+      : Cond(std::move(Cond)), Body(std::move(Body)) {}
+
+  llvm::Value *codegen() override;
+};
+
 #endif

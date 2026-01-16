@@ -38,6 +38,7 @@ std::unique_ptr<ExprAST> ParseExpression();
 std::unique_ptr<ExprAST> ParseUnary();
 std::unique_ptr<ExprAST> ParseBlock();
 std::unique_ptr<ExprAST> ParsePrintExpr();
+std::unique_ptr<ExprAST> ParseWhileExpr();
 
 // Called when CurTok is a Number.
 static std::unique_ptr<ExprAST> ParseNumberExpr() {
@@ -147,6 +148,9 @@ static std::unique_ptr<ExprAST> ParsePrimary() {
 
   case TOK_PRINT:
     return ParsePrintExpr();
+
+  case TOK_WHILE:
+    return ParseWhileExpr();
   }
 }
 
@@ -273,4 +277,24 @@ std::unique_ptr<ExprAST> ParsePrintExpr() {
   getNextToken();
 
   return std::make_unique<PrintExprAST>(std::move(Expr));
+}
+
+std::unique_ptr<ExprAST> ParseWhileExpr() {
+  getNextToken();
+
+  auto Cond = ParseExpression();
+  if (!Cond) {
+    return nullptr;
+  }
+
+  if (CurTok != '{') {
+    LogErrorAt(CurLoc, "Expected '{' after while condition");
+    return nullptr;
+  }
+
+  auto Body = ParseBlock();
+  if (!Body)
+    return nullptr;
+
+  return std::make_unique<WhileExprAST>(std::move(Cond), std::move(Body));
 }
