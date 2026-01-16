@@ -14,6 +14,7 @@ int getNextToken() { return CurTok = gettok(); }
 
 void InitializePrecedence() {
   BinopPrecedence['<'] = 10;
+  BinopPrecedence['>'] = 10;
   BinopPrecedence['+'] = 20;
   BinopPrecedence['-'] = 20;
   BinopPrecedence['*'] = 40;
@@ -81,6 +82,37 @@ static std::unique_ptr<ExprAST> ParseParenExpr() {
   return V;
 }
 
+std::unique_ptr<ExprAST> ParseIfExpr() {
+  getNextToken(); // Eating the if expression
+
+  auto Cond = ParseExpression();
+  if (!Cond)
+    return nullptr;
+
+  if (CurTok != TOK_THEN) {
+    LogErrorAt(CurLoc, "expected 'then'");
+    return nullptr;
+  }
+  getNextToken();
+
+  auto Then = ParseExpression();
+  if (!Then)
+    return nullptr;
+
+  if (CurTok != TOK_ELSE) {
+    LogErrorAt(CurLoc, "expected 'else'");
+    return nullptr;
+  }
+  getNextToken();
+
+  auto Else = ParseExpression();
+  if (!Else)
+    return nullptr;
+
+  return std::make_unique<IfExprAST>(std::move(Cond), std::move(Then),
+                                     std::move(Else));
+}
+
 // "Primary" means the basic building blocks: numbers or parentheses.
 static std::unique_ptr<ExprAST> ParsePrimary() {
   switch (CurTok) {
@@ -96,6 +128,9 @@ static std::unique_ptr<ExprAST> ParsePrimary() {
 
   case '(':
     return ParseParenExpr();
+
+  case TOK_IF:
+    return ParseIfExpr();
   }
 }
 
@@ -138,37 +173,6 @@ static std::unique_ptr<ExprAST> ParseBinOpRHS(int ExprPrec,
     LHS =
         std::make_unique<BinaryExprAST>(BinOp, std::move(LHS), std::move(RHS));
   }
-}
-
-std::unique_ptr<ExprAST> ParseIfExpr() {
-  getNextToken(); // Eating the if expression
-
-  auto Cond = ParseExpression();
-  if (!Cond)
-    return nullptr;
-
-  if (CurTok != TOK_THEN) {
-    LogErrorAt(CurLoc, "expected 'then'");
-    return nullptr;
-  }
-  getNextToken();
-
-  auto Then = ParseExpression();
-  if (!Then)
-    return nullptr;
-
-  if (CurTok != TOK_ELSE) {
-    LogErrorAt(CurLoc, "expected 'else'");
-    return nullptr;
-  }
-  getNextToken();
-
-  auto Else = ParseExpression();
-  if (!Else)
-    return nullptr;
-
-  return std::make_unique<IfExprAST>(std::move(Cond), std::move(Then),
-                                     std::move(Else));
 }
 
 // Entry point for parsing
