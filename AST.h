@@ -25,7 +25,7 @@ public:
 // Binary Operation Node (Branch): Holds the Operator ('+'), the Left side (A),
 // and the Right side (B).
 class BinaryExprAST : public ExprAST {
-  char Op; // The operator, like '+', '-', etc.
+  int Op; // The operator, like '+', '-', etc.
   std::unique_ptr<ExprAST> LHS;
   std::unique_ptr<ExprAST> RHS;
 
@@ -74,7 +74,7 @@ public:
 };
 
 class UnaryExprAST : public ExprAST {
-  char Opcode;
+  int Opcode;
   std::unique_ptr<ExprAST> Operand;
 
 public:

@@ -13,10 +13,10 @@ static std::map<int, int> BinopPrecedence; // Precedence table: '*' > '+'
 int getNextToken() { return CurTok = gettok(); }
 
 void InitializePrecedence() {
-  BinopPrecedence[TOK_EQ] = 5;
-  BinopPrecedence[TOK_NEQ] = 5;
   BinopPrecedence['<'] = 10;
   BinopPrecedence['>'] = 10;
+  BinopPrecedence[TOK_EQ] = 10;
+  BinopPrecedence[TOK_NEQ] = 10;
   BinopPrecedence['+'] = 20;
   BinopPrecedence['-'] = 20;
   BinopPrecedence['*'] = 40;
@@ -27,9 +27,6 @@ void InitializePrecedence() {
 // Returns the priority of the current operator. If it's not an operator (like a
 // number), returns -1.
 static int GetTokPrecedence() {
-  if (!isascii(CurTok))
-    return -1;
-
   int TokPrec = BinopPrecedence[CurTok];
   if (TokPrec <= 0)
     return -1;
