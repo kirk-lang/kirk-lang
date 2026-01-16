@@ -36,6 +36,7 @@ static int GetTokPrecedence() {
 }
 
 std::unique_ptr<ExprAST> ParseExpression();
+std::unique_ptr<ExprAST> ParseUnary();
 
 // Called when CurTok is a Number.
 static std::unique_ptr<ExprAST> ParseNumberExpr() {
@@ -153,7 +154,7 @@ static std::unique_ptr<ExprAST> ParseBinOpRHS(int ExprPrec,
     getNextToken(); // consume binop
 
     // Parse the primary expression after the binary operator
-    auto RHS = ParsePrimary();
+    auto RHS = ParseUnary();
     if (!RHS)
       return nullptr;
 
@@ -177,7 +178,7 @@ static std::unique_ptr<ExprAST> ParseBinOpRHS(int ExprPrec,
 
 // Entry point for parsing
 std::unique_ptr<ExprAST> ParseExpression() {
-  auto LHS = ParsePrimary();
+  auto LHS = ParseUnary();
   if (!LHS)
     return nullptr;
 
@@ -190,4 +191,19 @@ std::unique_ptr<ExprAST> Parse() {
     getNextToken();
 
   return ParseExpression();
+}
+
+std::unique_ptr<ExprAST> ParseUnary() {
+  // If the current token is not an operator that handles unary (like '-'),
+  // then it must be a primary expression.
+  if (CurTok != '-')
+    return ParsePrimary();
+
+  int Opc = CurTok;
+  getNextToken();
+
+  if (auto Operand = ParseUnary())
+    return std::make_unique<UnaryExprAST>(Opc, std::move(Operand));
+
+  return nullptr;
 }
