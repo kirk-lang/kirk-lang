@@ -138,6 +138,18 @@ int gettok() {
     return '<';
   }
 
+  if (LastChar == '/') {
+    if (SourceFile.peek() == '/') {
+      do {
+        LastChar = SourceFile.get();
+        CurCol++;
+      } while (LastChar != EOF && LastChar != '\n' && LastChar != '\r');
+
+      if (LastChar != EOF)
+        return gettok();
+    }
+  }
+
   if (LastChar == EOF)
     return TOK_EOF;
 
