@@ -11,7 +11,11 @@ Kirk is an experimental programming language and compiler written in C++. The go
 ## Features (Implemented)
 
 * **Variables:** Support for variable declaration, assignment, and lookups (`width = 10`).
-* **Math:** Full support for arithmetic operators (`+`, `-`, `*`, `/`, `%`) with operator precedence.
+* **Math:** Full support for arithmetic operators (`+`, `-`, `*`, `/`, `%`, `^`) with operator precedence, including exponentiation.
+* **Unary Operators:** Support for unary negation (`-x`).
+* **Comparison Operators:** Full set of comparison operators (`<`, `>`, `==`, `!=`, `<=`, `>=`).
+* **Control Flow:** `if`/`else` expressions and `while` loops with block syntax (`{ ... }`).
+* **Print:** Built-in `print()` function for output.
 * **Memory Management:** Automatic stack allocation using LLVM `alloca`, `store`, and `load`.
 * **LLVM Backend:** Compiles source code directly to optimized LLVM IR (`output.ll`).
 * **Smart Compiler (Phase 1):** Support for smart compiler error enhancements, where it suggests you what changes to make.
@@ -54,6 +58,23 @@ new_area = width * height
 
 # Complex expressions with precedence
 result = (width + height) * 2
+
+# Exponentiation
+x = 3
+squared = x ^ 2
+
+# Control flow with if/else
+max = if x > height then x else height
+
+# While loops
+counter = 0
+while counter < 5 {
+  print(counter)
+  counter = counter + 1
+}
+
+# Print output
+print(result)
 ```
 
 ## Roadmap
@@ -62,14 +83,16 @@ result = (width + height) * 2
 - [x] Variables & Memory Assignment
 - [x] Better Error Diagnostics
 - [x] Control Flow (if / else)
-- [x] Comparison Operators (<, >, ==)
+- [x] Comparison Operators (<, >, ==, !=, <=, >=)
+- [x] While Loops
+- [x] Print Function
 - [ ] Functions
 
 ## Status
 
 **Active Development.**
 
-The compiler currently functions as a powerful programmable calculator with variable state.
+The compiler supports variables, arithmetic (including exponentiation), control flow (`if`/`else`, `while`), comparison operators, and output via `print()`.
 
 > After a certain phase of development, both the 'Build' and 'Run' phase will be packaged in a separate "Kirk Compiler" package.
 
