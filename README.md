@@ -10,15 +10,20 @@ Kirk is an experimental programming language and compiler written in C++. The go
 
 ## Features (Implemented)
 
-* **Variables:** Support for variable declaration, assignment, and lookups (`width = 10`).
+* **Type System:** Built-in types `int`, `float`/`double`, and `bool` with automatic type casting between them.
+* **Typed Variable Declarations:** Variables can be declared with explicit types (`int x = 5`, `double pi = 3.14`, `bool flag = true`).
+* **Variables:** Support for variable assignment and lookups.
+* **Boolean Literals:** Support for `true` and `false` boolean values.
 * **Math:** Full support for arithmetic operators (`+`, `-`, `*`, `/`, `%`, `^`) with operator precedence, including exponentiation.
 * **Unary Operators:** Support for unary negation (`-x`).
 * **Comparison Operators:** Full set of comparison operators (`<`, `>`, `==`, `!=`, `<=`, `>=`).
 * **Control Flow:** `if`/`else` expressions and `while` loops with block syntax (`{ ... }`).
-* **Print:** Built-in `print()` function for output.
+* **Block Expressions:** Group multiple expressions using `{ ... }` syntax.
+* **Comments:** Single-line comments using `//` syntax.
+* **Print:** Built-in `print()` function for output (supports int, double, and bool types).
 * **Memory Management:** Automatic stack allocation using LLVM `alloca`, `store`, and `load`.
 * **LLVM Backend:** Compiles source code directly to optimized LLVM IR (`output.ll`).
-* **Smart Compiler (Phase 1):** Support for smart compiler error enhancements, where it suggests you what changes to make.
+* **Smart Compiler (Phase 1):** Support for smart compiler error enhancements, where it suggests you what changes to make (using Levenshtein distance for variable name suggestions).
 
 ## Build and Run
 
@@ -48,51 +53,62 @@ Rest steps will be the same from the Quick Start section.
 ## Example Code 
 
 ```kirk
-width = 10
-height = 5
+// Typed variable declarations
+int width = 10
+int height = 5
+double pi = 3.14
 
-# Variables are mutable and memory-managed
-area = width * height
+// Variables are mutable and memory-managed
+int area = width * height
 width = 20
-new_area = width * height
+int new_area = width * height
 
-# Complex expressions with precedence
-result = (width + height) * 2
+// Complex expressions with precedence
+int result = (width + height) * 2
 
-# Exponentiation
-x = 3
-squared = x ^ 2
+// Exponentiation
+int x = 3
+double squared = x ^ 2
 
-# Control flow with if/else
-max = if x > height then x else height
+// Boolean values
+bool flag = true
+bool check = x > height
 
-# While loops
-counter = 0
+// Control flow with if/else
+int max = if x > height then x else height
+
+// While loops
+int counter = 0
 while counter < 5 {
   print(counter)
   counter = counter + 1
 }
 
-# Print output
+// Print output (supports int, double, and bool)
 print(result)
+print(pi)
+print(flag)
 ```
 
 ## Roadmap
 
 - [x] Basic Arithmetic
 - [x] Variables & Memory Assignment
+- [x] Type System (int, float/double, bool)
+- [x] Typed Variable Declarations
 - [x] Better Error Diagnostics
 - [x] Control Flow (if / else)
 - [x] Comparison Operators (<, >, ==, !=, <=, >=)
 - [x] While Loops
 - [x] Print Function
+- [x] Comments (single-line)
 - [ ] Functions
 
 ## Status
 
 **Active Development.**
 
-The compiler supports variables, arithmetic (including exponentiation), control flow (`if`/`else`, `while`), comparison operators, and output via `print()`.
+The compiler supports typed variables (`int`, `double`, `bool`), arithmetic (including exponentiation), control flow (`if`/`else`, `while`), comparison operators, boolean literals, single-line comments, and output via `print()`.
 
 > After a certain phase of development, both the 'Build' and 'Run' phase will be packaged in a separate "Kirk Compiler" package.
 
