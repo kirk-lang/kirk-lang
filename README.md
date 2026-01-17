@@ -10,7 +10,7 @@ Kirk is an experimental programming language and compiler written in C++. The go
 
 ## Features (Implemented)
 
-* **Type System:** Built-in types `int`, `float`/`double`, and `bool` with automatic type casting between them.
+* **Type System:** Built-in types `int`, `float`/`double`, and `bool` with implicit type promotion (bool → int → double) during operations.
 * **Typed Variable Declarations:** Variables can be declared with explicit types (`int x = 5`, `double pi = 3.14`, `bool flag = true`).
 * **Variables:** Support for variable assignment and lookups.
 * **Boolean Literals:** Support for `true` and `false` boolean values.
@@ -66,7 +66,7 @@ int new_area = width * height
 // Complex expressions with precedence
 int result = (width + height) * 2
 
-// Exponentiation
+// Exponentiation (result is double due to type promotion)
 int x = 3
 double squared = x ^ 2
 
