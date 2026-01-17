@@ -2,6 +2,7 @@
 #define ERRORS_H
 
 #include "Algorithms.h"
+#include "Codegen.h"
 #include "Lexer.h"
 #include "llvm/IR/Instructions.h"
 #include <iostream>
@@ -48,7 +49,7 @@ public:
 class ReferenceError : public KirkError {
 public:
   ReferenceError(SourceLocation Loc, const std::string &Name,
-                 const std::map<std::string, llvm::AllocaInst *> &SymbolTable)
+                 const std::map<std::string, VarInfo> &SymbolTable)
       : KirkError(Loc, "") {
 
     Message = "Unknown variable name: '" + Name + "'";

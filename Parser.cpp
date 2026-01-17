@@ -42,11 +42,34 @@ std::unique_ptr<ExprAST> ParseUnary();
 std::unique_ptr<ExprAST> ParseBlock();
 std::unique_ptr<ExprAST> ParsePrintExpr();
 std::unique_ptr<ExprAST> ParseWhileExpr();
+std::unique_ptr<ExprAST> ParseVarDecl();
+std::unique_ptr<ExprAST> ParseBoolExpr();
+
+static KirkType TokenToKirkType(int Tok) {
+  switch (Tok) {
+  case TOK_TYPE_INT:
+    return KIRK_INT;
+  case TOK_TYPE_DOUBLE:
+    return KIRK_DOUBLE;
+  case TOK_TYPE_BOOL:
+    return KIRK_BOOL;
+  default:
+    SyntaxError(CurLoc, "Unknown type").raise();
+    return KIRK_VOID;
+  }
+}
 
 // Called when CurTok is a Number.
-static std::unique_ptr<ExprAST> ParseNumberExpr() {
-  auto Result = std::make_unique<NumberExprAST>(NumVal);
+static std::unique_ptr<ExprAST> ParseNumberExpr(bool IsInteger) {
+  auto Result = IsInteger ? std::make_unique<NumberExprAST>(IntVal)
+                          : std::make_unique<NumberExprAST>(NumVal);
   getNextToken(); // consume the number
+  return Result;
+}
+
+std::unique_ptr<ExprAST> ParseBoolExpr() {
+  auto Result = std::make_unique<BoolExprAST>(BoolVal);
+  getNextToken();
   return Result;
 }
 
@@ -66,7 +89,8 @@ static std::unique_ptr<ExprAST> ParseIdentifierExpr() {
     }
 
     // Variable Assignmnent
-    return std::make_unique<AssignmentExprAST>(IdName, std::move(RHS));
+    return std::make_unique<AssignmentExprAST>(VarLoc, IdName,
+                                               std::move(RHS));
   }
 
   // Variable Reference
@@ -141,7 +165,13 @@ static std::unique_ptr<ExprAST> ParsePrimary() {
     return ParseIdentifierExpr();
 
   case TOK_NUMBER:
-    return ParseNumberExpr();
+    return ParseNumberExpr(false);
+
+  case TOK_INT_LITERAL:
+    return ParseNumberExpr(true);
+
+  case TOK_BOOL_LITERAL:
+    return ParseBoolExpr();
 
   case '(':
     return ParseParenExpr();
@@ -154,6 +184,11 @@ static std::unique_ptr<ExprAST> ParsePrimary() {
 
   case TOK_WHILE:
     return ParseWhileExpr();
+
+  case TOK_TYPE_INT:
+  case TOK_TYPE_DOUBLE:
+  case TOK_TYPE_BOOL:
+    return ParseVarDecl();
   }
 }
 
@@ -300,4 +335,32 @@ std::unique_ptr<ExprAST> ParseWhileExpr() {
     return nullptr;
 
   return std::make_unique<WhileExprAST>(std::move(Cond), std::move(Body));
+}
+
+std::unique_ptr<ExprAST> ParseVarDecl() {
+  SourceLocation TypeLoc = CurLoc;
+  KirkType Type = TokenToKirkType(CurTok);
+  getNextToken();
+
+  if (CurTok != TOK_IDENTIFIER) {
+    LogErrorAt(CurLoc, "Expected identifier after type");
+    return nullptr;
+  }
+
+  std::string Name = IdentifierStr;
+  SourceLocation NameLoc = CurLoc;
+  getNextToken();
+
+  if (CurTok != TOK_ASSIGN) {
+    LogErrorAt(CurLoc, "Expected '=' after variable name");
+    return nullptr;
+  }
+
+  getNextToken();
+  auto Init = ParseExpression();
+  if (!Init)
+    return nullptr;
+
+  return std::make_unique<VarDeclExprAST>(NameLoc, Name, Type,
+                                          std::move(Init));
 }

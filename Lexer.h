@@ -13,6 +13,8 @@ struct SourceLocation {
 
 extern std::ifstream SourceFile;
 extern double NumVal;
+extern long long IntVal;
+extern bool BoolVal;
 extern std::string IdentifierStr;
 
 extern std::vector<std::string> SourceLines;
@@ -31,7 +33,12 @@ enum Token {
   TOK_EQ = -10,
   TOK_NEQ = -11,
   TOK_LEQ = -12,
-  TOK_GEQ = -13
+  TOK_GEQ = -13,
+  TOK_INT_LITERAL = -20,
+  TOK_BOOL_LITERAL = -21,
+  TOK_TYPE_INT = -22,
+  TOK_TYPE_DOUBLE = -23,
+  TOK_TYPE_BOOL = -24
 };
 
 int gettok();

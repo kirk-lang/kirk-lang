@@ -1,5 +1,2 @@
-x = 3
-y = x ^ 2
-
-// prints y
-print(y)
+int print = 5
+print(print)

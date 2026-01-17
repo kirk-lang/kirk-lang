@@ -2,6 +2,7 @@
 #define AST_H
 
 #include "Lexer.h"
+#include "Types.h"
 #include "llvm/IR/Value.h"
 #include <memory>
 
@@ -15,9 +16,18 @@ public:
 
 // Number Node (Leaf)
 class NumberExprAST : public ExprAST {
-  double Val; // Actual value, like "5", "5.0", etc.
+  double Val;         // Actual value, like "5", "5.0", etc.
+  long long IntVal;   // Exact integer value when IsInteger is true
+  bool IsInteger = false;
+
 public:
-  NumberExprAST(double Val) : Val(Val) {}
+  explicit NumberExprAST(double Val) : Val(Val), IntVal(0), IsInteger(false) {}
+  explicit NumberExprAST(long long Val)
+      : Val(static_cast<double>(Val)), IntVal(Val), IsInteger(true) {}
+
+  bool isInteger() const { return IsInteger; }
+  long long getIntVal() const { return IntVal; }
+  double getDoubleVal() const { return Val; }
 
   llvm::Value *codegen() override;
 };
@@ -40,11 +50,16 @@ public:
 // Assignment Node, represents things like "x = 5 + 2"
 class AssignmentExprAST : public ExprAST {
   std::string Name;
+  SourceLocation Loc;
   std::unique_ptr<ExprAST> RHS;
 
 public:
-  AssignmentExprAST(std::string Name, std::unique_ptr<ExprAST> RHS)
-      : Name(Name), RHS(std::move(RHS)) {}
+  AssignmentExprAST(SourceLocation Loc, std::string Name,
+                    std::unique_ptr<ExprAST> RHS)
+      : Name(std::move(Name)), Loc(Loc), RHS(std::move(RHS)) {}
+
+  const SourceLocation &getLoc() const { return Loc; }
+  const std::string &getName() const { return Name; }
 
   llvm::Value *codegen() override;
 };
@@ -110,6 +125,33 @@ public:
   WhileExprAST(std::unique_ptr<ExprAST> Cond, std::unique_ptr<ExprAST> Body)
       : Cond(std::move(Cond)), Body(std::move(Body)) {}
 
+  llvm::Value *codegen() override;
+};
+
+class VarDeclExprAST : public ExprAST {
+  std::string Name;
+  KirkType Type;
+  std::unique_ptr<ExprAST> InitVal;
+  SourceLocation Loc;
+
+public:
+  VarDeclExprAST(SourceLocation Loc, std::string Name, KirkType Type,
+                 std::unique_ptr<ExprAST> InitVal)
+      : Name(std::move(Name)), Type(Type), InitVal(std::move(InitVal)),
+        Loc(Loc) {}
+
+  const SourceLocation &getLoc() const { return Loc; }
+  const std::string &getName() const { return Name; }
+  KirkType getType() const { return Type; }
+
+  llvm::Value *codegen() override;
+};
+
+class BoolExprAST : public ExprAST {
+  bool Val;
+
+public:
+  BoolExprAST(bool Val) : Val(Val) {}
   llvm::Value *codegen() override;
 };
 

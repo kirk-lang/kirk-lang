@@ -12,6 +12,8 @@ int CurCol = 0;
 
 std::ifstream SourceFile;
 double NumVal;
+long long IntVal;
+bool BoolVal;
 std::string IdentifierStr;
 
 void LogErrorAt(SourceLocation Loc, const std::string &Msg) {
@@ -31,11 +33,14 @@ void LogErrorAt(SourceLocation Loc, const std::string &Msg) {
 int gettok() {
   static int LastChar = ' ';
 
-  static std::map<std::string, int> Keywords = {{"if", TOK_IF},
-                                                {"then", TOK_THEN},
-                                                {"else", TOK_ELSE},
-                                                {"print", TOK_PRINT},
-                                                {"while", TOK_WHILE}};
+      static std::map<std::string, int> Keywords = {
+        {"if", TOK_IF},          {"then", TOK_THEN},
+        {"else", TOK_ELSE},      {"print", TOK_PRINT},
+        {"while", TOK_WHILE},    {"int", TOK_TYPE_INT},
+        {"float", TOK_TYPE_DOUBLE},
+        {"double", TOK_TYPE_DOUBLE},
+        {"bool", TOK_TYPE_BOOL}, {"true", TOK_BOOL_LITERAL},
+        {"false", TOK_BOOL_LITERAL}};
 
   while (isspace(LastChar)) {
     // Handle newlines to track line numbers
@@ -67,6 +72,8 @@ int gettok() {
     // Check for keywords
     auto It = Keywords.find(IdentifierStr);
     if (It != Keywords.end()) {
+      if (It->second == TOK_BOOL_LITERAL)
+        BoolVal = (IdentifierStr == "true");
       return It->second;
     }
 
@@ -82,8 +89,14 @@ int gettok() {
       CurCol++;
     } while (isdigit(LastChar) || LastChar == '.');
 
-    NumVal = strtod(NumStr.c_str(), 0);
-    return TOK_NUMBER;
+    bool IsFloat = NumStr.find('.') != std::string::npos;
+    if (IsFloat) {
+      NumVal = strtod(NumStr.c_str(), 0);
+      return TOK_NUMBER;
+    }
+
+    IntVal = strtoll(NumStr.c_str(), nullptr, 10);
+    return TOK_INT_LITERAL;
   }
 
   if (LastChar == '=') {

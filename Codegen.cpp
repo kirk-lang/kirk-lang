@@ -3,6 +3,7 @@
 #include "Algorithms.h"
 #include "Errors.h"
 #include "Lexer.h"
+#include "Types.h"
 #include "llvm/IR/Verifier.h"
 #include <iostream>
 
@@ -12,7 +13,7 @@ std::unique_ptr<LLVMContext> TheContext;
 std::unique_ptr<IRBuilder<>> Builder;
 std::unique_ptr<Module> TheModule;
 
-std::map<std::string, AllocaInst *> NamedValues;
+std::map<std::string, VarInfo> NamedValues;
 
 void InitializeModule() {
   // Holds types and constants
@@ -25,10 +26,95 @@ void InitializeModule() {
   Builder = std::make_unique<IRBuilder<>>(*TheContext);
 }
 
+Type *getLLVMType(KirkType Type) {
+  switch (Type) {
+  case KIRK_INT:
+    return llvm::Type::getInt64Ty(*TheContext);
+  case KIRK_DOUBLE:
+    return llvm::Type::getDoubleTy(*TheContext);
+  case KIRK_BOOL:
+    return llvm::Type::getInt1Ty(*TheContext);
+  case KIRK_VOID:
+    return llvm::Type::getVoidTy(*TheContext);
+  default:
+    return llvm::Type::getDoubleTy(*TheContext);
+  }
+}
+
+static KirkType getKirkTypeFromLLVM(Type *Ty) {
+  if (Ty->isDoubleTy())
+    return KIRK_DOUBLE;
+  if (Ty->isIntegerTy(64))
+    return KIRK_INT;
+  if (Ty->isIntegerTy(1))
+    return KIRK_BOOL;
+  if (Ty->isVoidTy())
+    return KIRK_VOID;
+  return KIRK_DOUBLE;
+}
+
+static int getTypeRank(KirkType T) {
+  switch (T) {
+  case KIRK_DOUBLE:
+    return 3;
+  case KIRK_INT:
+    return 2;
+  case KIRK_BOOL:
+    return 1;
+  default:
+    return 0;
+  }
+}
+
+static KirkType getCommonType(KirkType A, KirkType B) {
+  return getTypeRank(A) >= getTypeRank(B) ? A : B;
+}
+
+static Value *CastToType(Value *Val, KirkType DestType,
+                         const std::string &Name) {
+  KirkType SrcType = getKirkTypeFromLLVM(Val->getType());
+  if (SrcType == DestType)
+    return Val;
+
+  switch (DestType) {
+  case KIRK_DOUBLE:
+    if (SrcType == KIRK_INT)
+      return Builder->CreateSIToFP(Val, Type::getDoubleTy(*TheContext), Name);
+    if (SrcType == KIRK_BOOL)
+      return Builder->CreateUIToFP(Val, Type::getDoubleTy(*TheContext), Name);
+    break;
+  case KIRK_INT:
+    if (SrcType == KIRK_DOUBLE)
+      return Builder->CreateFPToSI(Val, Type::getInt64Ty(*TheContext), Name);
+    if (SrcType == KIRK_BOOL)
+      return Builder->CreateZExt(Val, Type::getInt64Ty(*TheContext), Name);
+    break;
+  case KIRK_BOOL:
+    if (SrcType == KIRK_DOUBLE)
+      return Builder->CreateFCmpONE(
+          Val, ConstantFP::get(*TheContext, APFloat(0.0)), Name);
+    if (SrcType == KIRK_INT)
+      return Builder->CreateICmpNE(
+          Val, ConstantInt::get(Type::getInt64Ty(*TheContext), 0), Name);
+    break;
+  default:
+    break;
+  }
+
+  return Val;
+}
+
 // Turns a number to LLVM Number constant
 Value *NumberExprAST::codegen() {
+  if (isInteger())
+    return ConstantInt::get(*TheContext, APInt(64, getIntVal(), true));
+
   // APFloat is how LLVM represents floating point numbers internally
-  return ConstantFP::get(*TheContext, APFloat(Val));
+  return ConstantFP::get(*TheContext, APFloat(getDoubleVal()));
+}
+
+Value *BoolExprAST::codegen() {
+  return ConstantInt::get(Type::getInt1Ty(*TheContext), Val ? 1 : 0);
 }
 
 // Turns any expression into IR operation
@@ -40,39 +126,96 @@ Value *BinaryExprAST::codegen() {
   if (!L || !R)
     return nullptr;
 
+  KirkType LTy = getKirkTypeFromLLVM(L->getType());
+  KirkType RTy = getKirkTypeFromLLVM(R->getType());
+
+  auto CastBoth = [&](KirkType Target) {
+    L = CastToType(L, Target, "lhscast");
+    R = CastToType(R, Target, "rhscast");
+  };
+
+  KirkType CommonType = getCommonType(LTy, RTy);
+  KirkType NumericType = (CommonType == KIRK_BOOL) ? KIRK_INT : CommonType;
+
   // Create the instruction based on the operator
   switch (Op) {
+
+    // Arithmetic
   case '+':
-    return Builder->CreateFAdd(L, R);
+    CastBoth(NumericType);
+    return NumericType == KIRK_DOUBLE ? Builder->CreateFAdd(L, R, "addtmp")
+                                      : Builder->CreateAdd(L, R, "addtmp");
+
   case '-':
-    return Builder->CreateFSub(L, R);
+    CastBoth(NumericType);
+    return NumericType == KIRK_DOUBLE ? Builder->CreateFSub(L, R, "subtmp")
+                                      : Builder->CreateSub(L, R, "subtmp");
+
   case '*':
-    return Builder->CreateFMul(L, R);
+    CastBoth(NumericType);
+    return NumericType == KIRK_DOUBLE ? Builder->CreateFMul(L, R, "multmp")
+                                      : Builder->CreateMul(L, R, "multmp");
+
   case '/':
-    return Builder->CreateFDiv(L, R);
+    CastBoth(NumericType);
+    return NumericType == KIRK_DOUBLE ? Builder->CreateFDiv(L, R, "divtmp")
+                                      : Builder->CreateSDiv(L, R, "divtmp");
+
   case '%':
-    return Builder->CreateFRem(L, R);
-  case '<':
-    L = Builder->CreateFCmpOLT(L, R);
-    return Builder->CreateUIToFP(L, Type::getDoubleTy(*TheContext), "booltmp");
-  case '>':
-    L = Builder->CreateFCmpOGT(L, R);
-    return Builder->CreateUIToFP(L, Type::getDoubleTy(*TheContext), "booltmp");
-  case TOK_EQ:
-    L = Builder->CreateFCmpOEQ(L, R);
-    return Builder->CreateUIToFP(L, Type::getDoubleTy(*TheContext), "booltmp");
-  case TOK_NEQ:
-    L = Builder->CreateFCmpONE(L, R);
-    return Builder->CreateUIToFP(L, Type::getDoubleTy(*TheContext), "booltmp");
-  case TOK_GEQ:
-    L = Builder->CreateFCmpOGE(L, R);
-    return Builder->CreateUIToFP(L, Type::getDoubleTy(*TheContext));
-  case TOK_LEQ:
-    L = Builder->CreateFCmpOLE(L, R);
-    return Builder->CreateUIToFP(L, Type::getDoubleTy(*TheContext));
+    CastBoth(NumericType);
+    return NumericType == KIRK_DOUBLE ? Builder->CreateFRem(L, R, "modtmp")
+                                      : Builder->CreateSRem(L, R, "modtmp");
+
+  // Comparison
+  case '<': {
+    KirkType CmpType = (CommonType == KIRK_BOOL) ? KIRK_INT : CommonType;
+    CastBoth(CmpType);
+    return CmpType == KIRK_DOUBLE ? Builder->CreateFCmpOLT(L, R, "cmptmp")
+                                  : Builder->CreateICmpSLT(L, R, "cmptmp");
+  }
+
+  case '>': {
+    KirkType CmpType = (CommonType == KIRK_BOOL) ? KIRK_INT : CommonType;
+    CastBoth(CmpType);
+    return CmpType == KIRK_DOUBLE ? Builder->CreateFCmpOGT(L, R, "cmptmp")
+                                  : Builder->CreateICmpSGT(L, R, "cmptmp");
+  }
+
+  case TOK_EQ: {
+    KirkType CmpType = (CommonType == KIRK_BOOL) ? KIRK_INT : CommonType;
+    CastBoth(CmpType);
+    return CmpType == KIRK_DOUBLE ? Builder->CreateFCmpOEQ(L, R, "cmptmp")
+                                  : Builder->CreateICmpEQ(L, R, "cmptmp");
+  }
+
+  case TOK_NEQ: {
+    KirkType CmpType = (CommonType == KIRK_BOOL) ? KIRK_INT : CommonType;
+    CastBoth(CmpType);
+    return CmpType == KIRK_DOUBLE ? Builder->CreateFCmpONE(L, R, "cmptmp")
+                                  : Builder->CreateICmpNE(L, R, "cmptmp");
+  }
+
+  case TOK_GEQ: {
+    KirkType CmpType = (CommonType == KIRK_BOOL) ? KIRK_INT : CommonType;
+    CastBoth(CmpType);
+    return CmpType == KIRK_DOUBLE ? Builder->CreateFCmpOGE(L, R, "cmptmp")
+                                  : Builder->CreateICmpSGE(L, R, "cmptmp");
+  }
+
+  case TOK_LEQ: {
+    KirkType CmpType = (CommonType == KIRK_BOOL) ? KIRK_INT : CommonType;
+    CastBoth(CmpType);
+    return CmpType == KIRK_DOUBLE ? Builder->CreateFCmpOLE(L, R, "cmptmp")
+                                  : Builder->CreateICmpSLE(L, R, "cmptmp");
+  }
+  // Power
   case '^': {
+    // Ensure both operands are double
+    CastBoth(KIRK_DOUBLE);
+
     Function *PowFunc = Intrinsic::getOrInsertDeclaration(
         TheModule.get(), Intrinsic::pow, Type::getDoubleTy(*TheContext));
+
     return Builder->CreateCall(PowFunc, {L, R}, "powtmp");
   }
   default:
@@ -83,18 +226,39 @@ Value *BinaryExprAST::codegen() {
 
 // This creates an alloca instruction in the entry block of a function
 AllocaInst *CreateEntryBlockAlloca(Function *TheFunction,
-                                   const std::string &VarName) {
+                                   const std::string &VarName, KirkType Type) {
   IRBuilder<> TmpB(&TheFunction->getEntryBlock(),
                    TheFunction->getEntryBlock().begin());
-  return TmpB.CreateAlloca(Type::getDoubleTy(*TheContext), 0, VarName.c_str());
+  return TmpB.CreateAlloca(getLLVMType(Type), 0, VarName.c_str());
+}
+
+Value *VarDeclExprAST::codegen() {
+  if (NamedValues.count(Name)) {
+    SyntaxError(Loc, "Variable already declared").raise();
+    return nullptr;
+  }
+
+  Value *Init = InitVal->codegen();
+  if (!Init)
+    return nullptr;
+
+  Init = CastToType(Init, Type, "initcast");
+
+  Function *TheFunction = Builder->GetInsertBlock()->getParent();
+  AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction, Name, Type);
+
+  Builder->CreateStore(Init, Alloca);
+
+  // Store both Alloc and Type in symbol table
+  NamedValues[Name] = {Alloca, Type};
+  return Init;
 }
 
 Value *VariableExprAST::codegen() {
   // Look up the variable in the symbol table
   auto Iter = NamedValues.find(Name);
-  AllocaInst *A = (Iter != NamedValues.end()) ? Iter->second : nullptr;
-
-  if (A) {
+  if (Iter != NamedValues.end()) {
+    AllocaInst *A = Iter->second.Alloca;
     return Builder->CreateLoad(A->getAllocatedType(), A, Name.c_str());
   }
 
@@ -109,25 +273,23 @@ Value *AssignmentExprAST::codegen() {
     return nullptr;
 
   // Look up the variable
-  AllocaInst *Alloca = NamedValues[Name];
-
-  // If it doesn't exist, create it (declaration + assignment)
-  if (!Alloca) {
-    // Get the current function we are generating code into
-    Function *TheFunction = Builder->GetInsertBlock()->getParent();
-
-    // Create the 'alloca' for this variable
-    Alloca = CreateEntryBlockAlloca(TheFunction, Name);
-
-    // Add it to the Symbol Table so we can find it later
-    NamedValues[Name] = Alloca;
+  auto Iter = NamedValues.find(Name);
+  if (Iter == NamedValues.end()) {
+    SyntaxError(Loc, "Variable must be declared with a type before use")
+        .raise();
+    return nullptr;
   }
 
+  AllocaInst *Alloca = Iter->second.Alloca;
+  KirkType VarType = Iter->second.Type;
+
+  Value *CastVal = CastToType(Val, VarType, "assigncast");
+
   // Generate the Store instruction
-  Builder->CreateStore(Val, Alloca);
+  Builder->CreateStore(CastVal, Alloca);
 
   // Assignment expressions usually return the value assigned (allows x = y = 5)
-  return Val;
+  return CastVal;
 }
 
 Value *IfExprAST::codegen() {
@@ -136,8 +298,7 @@ Value *IfExprAST::codegen() {
     return nullptr;
 
   // Convert condition to a boolean
-  CondV = Builder->CreateFCmpONE(
-      CondV, ConstantFP::get(*TheContext, APFloat(0.0)), "ifcond");
+  CondV = CastToType(CondV, KIRK_BOOL, "ifcond");
 
   // Get the current function so we can insert blocks into it
   Function *TheFunction = Builder->GetInsertBlock()->getParent();
@@ -173,11 +334,15 @@ Value *IfExprAST::codegen() {
   TheFunction->insert(TheFunction->end(), MergeBB);
   Builder->SetInsertPoint(MergeBB);
 
+  KirkType ThenType = getKirkTypeFromLLVM(ThenV->getType());
+  KirkType ElseType = getKirkTypeFromLLVM(ElseV->getType());
+  KirkType MergeType = getCommonType(ThenType, ElseType);
+
+  ThenV = CastToType(ThenV, MergeType, "thencast");
+  ElseV = CastToType(ElseV, MergeType, "elsecast");
+
   // The PHI Node
-  // Since 'if' is an expression, it must return a value.
-  // The PHI node says: "If we came from ThenBB, use ThenV. If from ElseBB, use
-  // ElseV."
-  PHINode *PN = Builder->CreatePHI(Type::getDoubleTy(*TheContext), 2, "iftmp");
+  PHINode *PN = Builder->CreatePHI(ThenV->getType(), 2, "iftmp");
 
   PN->addIncoming(ThenV, ThenBB);
   PN->addIncoming(ElseV, ElseBB);
@@ -190,9 +355,20 @@ Value *UnaryExprAST::codegen() {
   if (!OperandV)
     return nullptr;
 
+  KirkType OperandType = getKirkTypeFromLLVM(OperandV->getType());
+  if (OperandType == KIRK_BOOL)
+    OperandV = CastToType(OperandV, KIRK_INT, "boolneg");
+
+  OperandType = getKirkTypeFromLLVM(OperandV->getType());
+
   switch (Opcode) {
   case '-':
-    return Builder->CreateFNeg(OperandV);
+    if (OperandType == KIRK_DOUBLE)
+      return Builder->CreateFNeg(OperandV);
+    if (OperandType == KIRK_INT)
+      return Builder->CreateNeg(OperandV);
+    SyntaxError(CurLoc, "Unknown unary operand type").raise();
+    return nullptr;
   default:
     SyntaxError(CurLoc, "Unknown unary operator");
     return nullptr;
@@ -213,9 +389,30 @@ Value *PrintExprAST::codegen() {
     return nullptr;
 
   Function *PrintfFunc = TheModule->getFunction("printf");
-  Value *FormatStr = Builder->CreateGlobalString("%.2f\n", "printstr");
+  Type *Ty = Val->getType();
 
-  return Builder->CreateCall(PrintfFunc, {FormatStr, Val}, "printcall");
+  if (Ty->isDoubleTy()) {
+    Value *FormatStr =
+        Builder->CreateGlobalStringPtr("%.2f\n", "printstrdbl");
+    return Builder->CreateCall(PrintfFunc, {FormatStr, Val}, "printcall");
+  }
+
+  if (Ty->isIntegerTy(64)) {
+    Value *FormatStr =
+        Builder->CreateGlobalStringPtr("%lld\n", "printstrint");
+    return Builder->CreateCall(PrintfFunc, {FormatStr, Val}, "printcall");
+  }
+
+  if (Ty->isIntegerTy(1)) {
+    Value *Zext = Builder->CreateZExt(Val, Type::getInt32Ty(*TheContext),
+                                      "booltoint");
+    Value *FormatStr =
+        Builder->CreateGlobalStringPtr("%d\n", "printstrbool");
+    return Builder->CreateCall(PrintfFunc, {FormatStr, Zext}, "printcall");
+  }
+
+  SyntaxError(CurLoc, "Unsupported type for print").raise();
+  return nullptr;
 }
 
 Value *WhileExprAST::codegen() {
@@ -233,8 +430,7 @@ Value *WhileExprAST::codegen() {
   if (!CondV)
     return nullptr;
 
-  CondV = Builder->CreateFCmpONE(
-      CondV, ConstantFP::get(*TheContext, APFloat(0.0)), "loopcond");
+  CondV = CastToType(CondV, KIRK_BOOL, "loopcond");
 
   // Conditional Branch: if true -> Body, else -> After
   Builder->CreateCondBr(CondV, LoopBodyBB, AfterBB);

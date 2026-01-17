@@ -1,6 +1,7 @@
 #ifndef CODEGEN_H
 #define CODEGEN_H
 
+#include "Types.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
@@ -14,13 +15,19 @@ extern std::unique_ptr<llvm::LLVMContext> TheContext;
 extern std::unique_ptr<llvm::IRBuilder<>> Builder;
 extern std::unique_ptr<llvm::Module> TheModule;
 
+struct VarInfo {
+  llvm::AllocaInst *Alloca;
+  KirkType Type;
+};
+
 // Symbol Table: Maps variables to their memory locations (AllocaInst)
-extern std::map<std::string, llvm::AllocaInst *> NamedValues;
+extern std::map<std::string, VarInfo> NamedValues;
 
 // Helper function to initialize the tools
 void InitializeModule();
 // Helper function to create an alloca instruction
 llvm::AllocaInst *CreateEntryBlockAlloca(llvm::Function *TheFunction,
-                                         const std::string &VarName);
+                                         const std::string &VarName,
+                                         KirkType Type);
 
 #endif
